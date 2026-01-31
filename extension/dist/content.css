@@ -1,0 +1,7 @@
+/* Content Script Styles */
+/* These styles are minimal as we use Shadow DOM for isolation */
+
+#spinabot-cursor-bubble,
+#spinabot-side-panel {
+    all: initial;
+}

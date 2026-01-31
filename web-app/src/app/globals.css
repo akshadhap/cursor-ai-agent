@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Black & White Theme - Light Mode */
+    --background: 0 0% 100%;
+    /* Pure white */
+    --foreground: 0 0% 0%;
+    /* Pure black */
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 0%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 0%;
+    --primary: 0 0% 0%;
+    /* Black primary */
+    --primary-foreground: 0 0% 100%;
+    /* White text on black */
+    --secondary: 0 0% 96%;
+    /* Light gray */
+    --secondary-foreground: 0 0% 0%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 40%;
+    /* Medium gray */
+    --accent: 0 0% 96%;
+    --accent-foreground: 0 0% 0%;
+    --destructive: 0 84.2% 60.2%;
+    /* Red for errors */
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 90%;
+    /* Light gray border */
+    --input: 0 0% 90%;
+    --ring: 0 0% 0%;
+    /* Black focus ring */
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    /* Black & White Theme - Dark Mode */
+    --background: 0 0% 0%;
+    /* Pure black */
+    --foreground: 0 0% 100%;
+    /* Pure white */
+    --card: 0 0% 0%;
+    --card-foreground: 0 0% 100%;
+    --popover: 0 0% 0%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 0 0% 100%;
+    /* White primary */
+    --primary-foreground: 0 0% 0%;
+    /* Black text on white */
+    --secondary: 0 0% 10%;
+    /* Dark gray */
+    --secondary-foreground: 0 0% 100%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 60%;
+    /* Medium gray */
+    --accent: 0 0% 10%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62.8% 30.6%;
+    /* Dark red for errors */
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 20%;
+    /* Dark gray border */
+    --input: 0 0% 20%;
+    --ring: 0 0% 100%;
+    /* White focus ring */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
