@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { summarizeText } from "@/lib/groq";
+import { scrapeLinkedInProfile } from "@/lib/linkedin-scraper";
 
 /**
  * POST /api/agent/scrape
@@ -29,97 +30,68 @@ export async function POST(request: NextRequest) {
 
         const validUrl = url.startsWith("http") ? url : `https://${url}`;
 
-        // Check if it's a LinkedIn profile
-        const isLinkedIn = validUrl.includes("linkedin.com/in/");
+        // Specialized handling for LinkedIn
+        if (validUrl.includes('linkedin.com/in/') || validUrl.includes('linkedin.com/company/')) {
+            console.log(`🎯 LinkedIn URL detected, using specialized scraper: ${validUrl}`);
+            const linkedinResult = await scrapeLinkedInProfile(validUrl);
 
-        try {
-            let response;
-            let responseHtmlOrJson;
+            if (linkedinResult.success && linkedinResult.data) {
+                const profile = linkedinResult.data;
+                const summaryContent = `
+                    Name: ${profile.fullName}
+                    Headline: ${profile.headline}
+                    Location: ${profile.location}
+                    Summary: ${profile.summary}
+                    Experience: ${JSON.stringify(profile.experience)}
+                    Education: ${JSON.stringify(profile.education)}
+                    Skills: ${profile.skills?.join(', ')}
+                `;
 
-            if (isLinkedIn) {
-                // Use Scraping Dog's Dedicated LinkedIn API (standard endpoint)
-                console.log("Detected LinkedIn URL, using specialized API...");
-
-                // Ensure we have a clean URL without trailing slashes
-                const cleanLinkedInUrl = validUrl.replace(/\/+$/, '');
-
-                // USERS REQUEST: Use the dedicated LinkedIn API Key (Hardcoded for reliability)
-                const linkedinApiKey = "697d95dec83e3674299b9613";
-
-                console.log(`LinkedIn Scrape Debug: KeyPrefix=${linkedinApiKey.substring(0, 4)}, URL=${cleanLinkedInUrl}`);
-
-                // Note: Scraping Dog often requires the URL to be exactly as they expect.
-                // Trying the 'linkedinprofile' endpoint which is sometimes separate from 'linkedin?type=profile'
-                // But standard docs say: https://api.scrapingdog.com/linkedin?api_key=XXX&type=profile&link=XXX
-
-                // Re-adding encodeURIComponent is CRITICAL because the link contains special chars like ://
-                const requestUrl = `https://api.scrapingdog.com/linkedin?api_key=${linkedinApiKey}&type=profile&link=${encodeURIComponent(cleanLinkedInUrl)}`;
-
-                response = await fetch(requestUrl, { method: 'GET' });
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error(`LinkedIn API Failed: Status=${response.status}, Body=${errorText}`);
-                    // Ensure the error text is passed to the catch block
-                    throw new Error(errorText || response.statusText);
-                }
-
-                // LinkedIn API returns JSON
-                const linkedinData = await response.json();
-
-                // Format LinkedIn data into standard result structure
-                const fullName = linkedinData[0]?.fullName || "LinkedIn Profile";
-                const headline = linkedinData[0]?.headline || "";
-                const summary = linkedinData[0]?.summary || headline;
-                const experience = linkedinData[0]?.experience?.map((exp: any) =>
-                    `${exp.position} at ${exp.company} (${exp.dateRange})`
-                ).join('. ') || "";
-
-                // Combine for AI summary generation
-                const fullText = `Profile: ${fullName}. Headline: ${headline}. About: ${summary}. Experience: ${experience}`;
-
-                // Generate AI summary
-                let aiSummary = "";
+                // Still use Groq to summarize the structured data nicely
+                let summary = "";
                 try {
-                    aiSummary = await summarizeText(fullText.substring(0, 5000));
-                } catch (e) {
-                    aiSummary = summary;
+                    summary = await summarizeText(summaryContent);
+                } catch (groqError) {
+                    console.error("Groq summarization failed:", groqError);
+                    summary = profile.summary || "Summary generation failed.";
                 }
 
                 return NextResponse.json({
                     success: true,
                     result: {
                         url: validUrl,
-                        title: `${fullName} - LinkedIn`,
-                        summary: aiSummary,
-                        preview: `Headline: ${headline}\nLocation: ${linkedinData[0]?.location || 'N/A'}`,
-                        contentLength: JSON.stringify(linkedinData).length,
+                        title: `${profile.fullName} - ${profile.headline}`,
+                        summary,
+                        preview: profile.summary?.substring(0, 500) + "...",
+                        contentLength: summaryContent.length,
                         scrapedAt: new Date().toISOString(),
-                        // Add raw data for potential future use
-                        rawData: linkedinData[0]
+                        isLinkedIn: true,
+                        profileData: profile
                     },
                     action: "scrape",
                 });
             }
+            console.log('⚠️ Specialized LinkedIn scraper failed, falling back to standard scrape...');
+        }
 
-            // Standard Scraping for non-LinkedIn sites
-            const scrapingDogUrl = `https://api.scrapingdog.com/scrape?api_key=${scrapingDogApiKey}&url=${encodeURIComponent(validUrl)}&dynamic=false`;
+        try {
+            // Use Scraping Dog for all other URLs (or as fallback)
+            console.log(`Scraping URL with Scraping Dog: ${validUrl}`);
 
-            response = await fetch(scrapingDogUrl, {
+            const scrapingDogUrl = `https://api.scrapingdog.com/scrape?api_key=${scrapingDogApiKey}&url=${encodeURIComponent(validUrl)}&dynamic=true`;
+
+            const response = await fetch(scrapingDogUrl, {
                 method: 'GET',
                 headers: {
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                    'Accept': 'text/html',
                 }
             });
 
             if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Scraping Dog API returned ${response.status}: ${response.statusText} - ${errorText}`);
+                throw new Error(`Scraping failed: ${response.status} ${response.statusText}`);
             }
 
-            const html = await response.text();
-
-            // Extract title
+            const html = await response.text();  // Extract title
             const titleMatch = html.match(/<title>(.*?)<\/title>/i);
             const title = titleMatch ? titleMatch[1].trim() : "No Title";
 
@@ -162,7 +134,7 @@ export async function POST(request: NextRequest) {
                 {
                     error: "Failed to scrape URL",
                     details: fetchError.message || "Unknown error",
-                    suggestion: isLinkedIn ? "LinkedIn profiles require specific handling." : "The URL might be blocked or invalid."
+                    suggestion: "The URL might be blocked or invalid."
                 },
                 { status: 400 }
             );

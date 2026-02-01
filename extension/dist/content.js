@@ -1,4 +1,4 @@
-var C=Object.defineProperty;var z=(n,e,t)=>e in n?C(n,e,{enumerable:!0,configurable:!0,writable:!0,value:t}):n[e]=t;var g=(n,e,t)=>z(n,typeof e!="symbol"?e+"":e,t);class R{constructor(){g(this,"container",null);g(this,"shadowRoot",null);g(this,"activeTab","ask");g(this,"activeAction",null);g(this,"isVisible",!1);g(this,"selectedText","");g(this,"config",{apiKeys:{notion:"",jira:"",slack:"",apify:"",scrapingbee:"",hunter:"",clearbit:""},email:{provider:"gmail",address:"",password:""}});this.loadConfig(),this.createPanel(),this.setupMessageListener()}loadConfig(){chrome.storage&&chrome.storage.local&&chrome.storage.local.get(["spinabot_config"],e=>{e.spinabot_config&&(this.config={...this.config,...e.spinabot_config})})}saveConfig(){chrome.storage&&chrome.storage.local&&chrome.storage.local.set({spinabot_config:this.config})}setupMessageListener(){var e;(e=chrome.runtime)==null||e.onMessage.addListener((t,i,a)=>{t.type==="OPEN_PANEL"&&(this.open(),t.tab&&this.switchTab(t.tab))})}createPanel(){this.container=document.createElement("div"),this.container.id="spinabot-ai-panel",this.container.style.cssText=`
+var y=Object.defineProperty;var w=(s,e,t)=>e in s?y(s,e,{enumerable:!0,configurable:!0,writable:!0,value:t}):s[e]=t;var u=(s,e,t)=>w(s,typeof e!="symbol"?e+"":e,t);class k{constructor(){u(this,"container",null);u(this,"shadowRoot",null);u(this,"activeTab","ask");u(this,"activeAction",null);u(this,"isVisible",!1);u(this,"selectedText","");this.createPanel(),this.setupMessageListener()}setupMessageListener(){var e;(e=chrome.runtime)==null||e.onMessage.addListener((t,i,r)=>{t.type==="OPEN_PANEL"&&(this.open(),t.tab&&this.switchTab(t.tab))})}createPanel(){this.container=document.createElement("div"),this.container.id="spinabot-ai-panel",this.container.style.cssText=`
       position: fixed;
       top: 0;
       right: 0;
@@ -465,24 +465,30 @@ var C=Object.defineProperty;var z=(n,e,t)=>e in n?C(n,e,{enumerable:!0,configura
 
       .alert-error {
         background: #fef2f2;
-        border: 1px solid #fecaca;
-        color: #991b1b;
+        background-color: #ecfdf5;
+        color: #047857;
       }
 
-      /* ===== UTILITIES ===== */
-      .text-center { text-align: center; }
-      .mb-16 { margin-bottom: 16px; }
-      .mt-16 { margin-top: 16px; }
-      .hidden { display: none; }
+      .alert-error {
+        background-color: #fef2f2;
+        color: #b91c1c;
+      }
       
-      .fade-in {
-        animation: fadeIn 0.3s ease;
+      .spinner {
+        width: 24px;
+        height: 24px;
+        border: 3px solid var(--border);
+        border-top-color: var(--primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 0.5rem;
       }
-
-      @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .loading { text-align: center; padding: 2rem; }
+      .loading-text { font-size: 0.875rem; color: var(--muted-foreground); }
+      .hidden { display: none; }
+      .mb-4 { margin-bottom: 1rem; }
+      .mt-4 { margin-top: 1rem; }
     `}getPanelHTML(){return`
       <div class="panel-header">
         <div class="brand">
@@ -520,43 +526,76 @@ var C=Object.defineProperty;var z=(n,e,t)=>e in n?C(n,e,{enumerable:!0,configura
           <span class="tab-icon">✉️</span>
           <span>Email</span>
         </button>
-        <button class="tab" data-tab="settings">
-          <span class="tab-icon">⚙️</span>
-          <span>Settings</span>
-        </button>
       </div>
 
       <div class="panel-content" id="panel-content">
         <!-- Dynamic content will be rendered here -->
       </div>
-    `}attachEventListeners(){var t,i,a,o,s;const e=(t=this.shadowRoot)==null?void 0:t.querySelectorAll(".tab");e==null||e.forEach(r=>{r.addEventListener("click",c=>{e.forEach(d=>d.classList.remove("active")),c.currentTarget.classList.add("active"),this.activeTab=c.currentTarget.dataset.tab,this.renderContent()})}),(a=(i=this.shadowRoot)==null?void 0:i.getElementById("close-btn"))==null||a.addEventListener("click",()=>this.close()),(s=(o=this.shadowRoot)==null?void 0:o.getElementById("minimize-btn"))==null||s.addEventListener("click",()=>this.minimize())}renderContent(){var t;const e=(t=this.shadowRoot)==null?void 0:t.getElementById("panel-content");if(e)switch(e.innerHTML="",e.classList.add("fade-in"),this.activeTab){case"ask":this.renderAskTab(e);break;case"actions":this.renderActionsTab(e);break;case"email":this.renderEmailTab(e);break;case"settings":this.renderSettingsTab(e);break}}renderAskTab(e){var t,i,a;e.innerHTML=`
-      <div class="card">
-        <div class="card-title">👋 Hi, I'm Spinabot</div>
-        <div class="card-description">
-          I can help you summarize pages, answer questions, and assist with your tasks.
+    `}attachEventListeners(){var t,i,r,n,a;const e=(t=this.shadowRoot)==null?void 0:t.querySelectorAll(".tab");e==null||e.forEach(o=>{o.addEventListener("click",c=>{e.forEach(p=>p.classList.remove("active")),c.currentTarget.classList.add("active"),this.activeTab=c.currentTarget.dataset.tab,this.renderContent()})}),(r=(i=this.shadowRoot)==null?void 0:i.getElementById("close-btn"))==null||r.addEventListener("click",()=>this.close()),(a=(n=this.shadowRoot)==null?void 0:n.getElementById("minimize-btn"))==null||a.addEventListener("click",()=>this.minimize())}renderContent(){var t;const e=(t=this.shadowRoot)==null?void 0:t.getElementById("panel-content");if(e)switch(e.innerHTML="",e.classList.add("fade-in"),this.activeTab){case"ask":this.renderAskTab(e);break;case"actions":this.renderActionsTab(e);break;case"email":this.renderEmailTab(e);break}}renderAskTab(e){var i,r;e.innerHTML=`
+      <div style="display: flex; flex-direction: column; height: 100%; position: relative;">
+        <div class="chat-messages" id="chat-messages" style="flex: 1; overflow-y: auto; padding: 16px; padding-bottom: 20px; display: flex; flex-direction: column; gap: 16px;">
+          <!-- Intro State -->
+          <div id="chat-intro" style="text-align: center; padding: 40px 20px; color: var(--muted-foreground); margin-top: auto; margin-bottom: auto;">
+            <div style="font-size: 48px; margin-bottom: 16px;">✨</div>
+            <h3 style="font-size: 18px; font-weight: 600; color: var(--foreground); margin-bottom: 8px;">Hi, I'm Spinabot</h3>
+            <p style="font-size: 14px; margin-bottom: 24px; line-height: 1.5;">
+              I'm reading the current page. Ask me to summarize it, find specific details, or answer questions.
+            </p>
+            <button class="btn btn-secondary" id="summarize-page-btn" style="width: auto; margin: 0 auto; display: inline-flex; background: var(--secondary); color: var(--secondary-foreground); border: 1px solid var(--border);">
+              <span style="font-size: 16px;">📝</span> Summarize This Page
+            </button>
+          </div>
         </div>
-        <button class="btn" id="summarize-page-btn">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="21" y1="10" x2="3" y2="10"/>
-            <line x1="21" y1="6" x2="3" y2="6"/>
-            <line x1="21" y1="14" x2="3" y2="14"/>
-            <line x1="21" y1="18" x2="3" y2="18"/>
-          </svg>
-          Summarize This Page
-        </button>
-      </div>
 
-      <div id="summary-result" class="hidden"></div>
-
-      <div class="card">
-        <div class="card-title">💬 Chat with AI</div>
-        <div class="chat-messages" id="chat-messages"></div>
-        <div class="input-group">
-          <textarea id="chat-input" placeholder="Ask me anything..." rows="3"></textarea>
+        <div style="padding: 12px 16px 16px; border-top: 1px solid var(--border); background: var(--background);">
+          <div style="position: relative; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); overflow: hidden; transition: border-color 0.2s;">
+            <textarea id="chat-input" 
+              placeholder="Ask about this page..." 
+              rows="1" 
+              style="
+                width: 100%;
+                padding: 12px 48px 12px 12px; 
+                resize: none; 
+                overflow-y: auto; 
+                min-height: 46px; 
+                max-height: 150px;
+                border: none;
+                background: transparent;
+                font-size: 14px;
+                line-height: 1.5;
+                color: var(--foreground);
+                display: block;
+              "
+            ></textarea>
+            <button id="send-chat-btn" style="
+              position: absolute; 
+              right: 6px; 
+              bottom: 6px; 
+              width: 32px; 
+              height: 32px; 
+              border-radius: var(--radius-sm); 
+              background: #18181b; 
+              color: #ffffff; 
+              border: none; 
+              display: flex; 
+              align-items: center; 
+              justify-content: center; 
+              cursor: pointer;
+              transition: opacity 0.2s;
+              z-index: 10;
+            ">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </div>
+          <div style="font-size: 10px; color: var(--muted-foreground); text-align: center; margin-top: 8px;">
+            AI can make mistakes. Check important info.
+          </div>
         </div>
-        <button class="btn btn-secondary" id="send-chat-btn">Send Message</button>
       </div>
-    `,(t=e.querySelector("#summarize-page-btn"))==null||t.addEventListener("click",()=>this.handleSummarize()),(i=e.querySelector("#send-chat-btn"))==null||i.addEventListener("click",()=>this.handleChat()),(a=e.querySelector("#chat-input"))==null||a.addEventListener("keydown",o=>{o.key==="Enter"&&!o.shiftKey&&(o.preventDefault(),this.handleChat())})}renderActionsTab(e){this.activeAction?this.renderActionForm(e,this.activeAction):(e.innerHTML=`
+    `,(i=e.querySelector("#summarize-page-btn"))==null||i.addEventListener("click",()=>{this.handleSummarize(),this.hideIntro()}),(r=e.querySelector("#send-chat-btn"))==null||r.addEventListener("click",()=>this.handleChat());const t=e.querySelector("#chat-input");t&&(t.addEventListener("keydown",n=>{n.key==="Enter"&&!n.shiftKey&&(n.preventDefault(),this.handleChat())}),t.addEventListener("input",function(){this.style.height="auto",this.style.height=Math.min(this.scrollHeight,150)+"px"}),t.focus())}hideIntro(){var t;const e=(t=this.shadowRoot)==null?void 0:t.getElementById("chat-intro");e&&(e.style.display="none")}renderActionsTab(e){this.activeAction?this.renderActionForm(e,this.activeAction):(e.innerHTML=`
         <div class="card">
           <div class="card-title">⚡ Choose an Action</div>
           <div class="card-description">Select what you'd like to do</div>
@@ -576,7 +615,7 @@ var C=Object.defineProperty;var z=(n,e,t)=>e in n?C(n,e,{enumerable:!0,configura
             <div class="action-label">Enrich Info</div>
           </div>
         </div>
-      `,e.querySelectorAll(".action-card").forEach(t=>{t.addEventListener("click",i=>{this.activeAction=i.currentTarget.dataset.action,this.renderContent()})}))}renderActionForm(e,t){var a,o,s,r;let i=`
+      `,e.querySelectorAll(".action-card").forEach(t=>{t.addEventListener("click",i=>{this.activeAction=i.currentTarget.dataset.action,this.renderContent()})}))}renderActionForm(e,t){var r,n,a,o;let i=`
       <button class="btn btn-secondary btn-small mb-16" id="back-to-actions">
         ← Back to Actions
       </button>
@@ -610,153 +649,103 @@ var C=Object.defineProperty;var z=(n,e,t)=>e in n?C(n,e,{enumerable:!0,configura
             <label class="label">URL (leave empty for current page)</label>
             <input type="text" id="scrape-url" placeholder="https://example.com">
           </div>
-          <div style="background: var(--bg-alt); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 16px;">
-            <div style="font-size: 12px; color: var(--text-muted);">
-              <strong>🌐 Scraping Tool:</strong> Scraping Dog (Anti-bot protection enabled)
+          <div style="background: var(--secondary); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 16px;">
+            <div style="font-size: 12px; color: var(--muted-foreground);">
+              <strong>🌐 Scraping Tool:</strong> Scraping Dog (Dedciated API & Basic Fallback)
             </div>
           </div>
           <button class="btn" id="scrape-btn">Scrape Data</button>
         </div>
-        <div id="scrape-result"></div>
+        <div id="scrape-result" class="result-box hidden"></div>
       `:t==="enrich"&&(i+=`
         <div class="card">
           <div class="card-title">💎 Enrich Lead Information</div>
           <div class="card-description">Get detailed insights about a person or company</div>
           <div class="input-group">
-            <label class="label">Lead Information</label>
-            <textarea id="enrich-text" placeholder="Paste bio, LinkedIn profile, or company info..." rows="5"></textarea>
+            <label class="label">Context / Bio</label>
+          <textarea id="enrich-text" placeholder="Paste bio or text to enrich..." rows="5">${this.selectedText||""}</textarea>
+          <div style="font-size: 11px; color: var(--muted-foreground); margin-top: 4px;">Leave empty to search based on page title/URL data.</div>
           </div>
-          <div style="background: var(--bg-alt); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 16px;">
-            <div style="font-size: 12px; color: var(--text-muted);">
+          <div style="background: var(--secondary); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 16px;">
+            <div style="font-size: 12px; color: var(--muted-foreground);">
               <strong>💎 Enrichment Tool:</strong> SERP API (Web search & data enrichment)
             </div>
           </div>
           <button class="btn" id="enrich-btn">Enrich Profile</button>
         </div>
-        <div id="enrich-result"></div>
-      `),e.innerHTML=i,(a=e.querySelector("#back-to-actions"))==null||a.addEventListener("click",()=>{this.activeAction=null,this.renderContent()}),t==="task"?(o=e.querySelector("#create-task-btn"))==null||o.addEventListener("click",()=>this.handleCreateTask()):t==="scrape"?(s=e.querySelector("#scrape-btn"))==null||s.addEventListener("click",()=>this.handleScrape()):t==="enrich"&&((r=e.querySelector("#enrich-btn"))==null||r.addEventListener("click",()=>this.handleEnrich()))}renderEmailTab(e){var t;e.innerHTML=`
+        <div id="enrich-result" class="result-box hidden"></div>
+      `),e.innerHTML=i,(r=e.querySelector("#back-to-actions"))==null||r.addEventListener("click",()=>{this.activeAction=null,this.renderContent()}),t==="task"?(n=e.querySelector("#create-task-btn"))==null||n.addEventListener("click",()=>this.handleCreateTask()):t==="scrape"?(a=e.querySelector("#scrape-btn"))==null||a.addEventListener("click",()=>this.handleScrape()):t==="enrich"&&((o=e.querySelector("#enrich-btn"))==null||o.addEventListener("click",()=>this.handleEnrich()))}renderEmailTab(e){var t,i;e.innerHTML=`
+      <button class="btn btn-secondary mb-4" id="back-to-actions">
+        ← Back
+      </button>
       <div class="card">
         <div class="card-title">✉️ Draft Email</div>
-        <div class="card-description">Generate professional emails with AI</div>
-        <div class="input-group">
-          <label class="label">Email Context / Topic</label>
-          <textarea id="email-context" placeholder="What is this email about?" rows="4">${this.selectedText}</textarea>
-        </div>
+        <div class="card-description">Auto-generate an email from context</div>
+        
         <div class="input-group">
           <label class="label">Tone</label>
           <select id="email-tone">
             <option value="professional">Professional</option>
             <option value="friendly">Friendly</option>
-            <option value="formal">Formal</option>
-            <option value="casual">Casual</option>
+            <option value="persuasive">Persuasive</option>
           </select>
         </div>
-        <button class="btn" id="generate-email-btn">Generate Draft</button>
-      </div>
-
-      <div id="email-draft" class="hidden"></div>
-    `,(t=e.querySelector("#generate-email-btn"))==null||t.addEventListener("click",()=>this.handleGenerateEmail())}renderSettingsTab(e){var t;e.innerHTML=`
-      <div class="card">
-        <div class="card-title">🔒 Core APIs (Server-Side)</div>
-        <div class="card-description" style="margin-bottom: 16px;">
-          These APIs are configured securely in the server environment and cannot be changed from the extension.
-        </div>
-        
-        <div style="background: var(--bg-alt); padding: 16px; border-radius: var(--radius); margin-bottom: 12px;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-            <div>
-              <div style="font-weight: 600; font-size: 14px; color: var(--text);">🌐 Scraping Dog API</div>
-              <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Web scraping with anti-bot protection</div>
-            </div>
-            <div style="background: #10b981; color: white; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 600;">
-              ACTIVE
-            </div>
-          </div>
-          <div style="font-family: monospace; font-size: 12px; color: var(--text-muted); background: var(--bg); padding: 8px 12px; border-radius: 4px; margin-top: 8px;">
-            697c4e...8450
-          </div>
-        </div>
-
-        <div style="background: var(--bg-alt); padding: 16px; border-radius: var(--radius);">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-            <div>
-              <div style="font-weight: 600; font-size: 14px; color: var(--text);">💎 SERP API</div>
-              <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Web search and data enrichment</div>
-            </div>
-            <div style="background: #10b981; color: white; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 600;">
-              ACTIVE
-            </div>
-          </div>
-          <div style="font-family: monospace; font-size: 12px; color: var(--text-muted); background: var(--bg); padding: 8px 12px; border-radius: 4px; margin-top: 8px;">
-            de514c...d41a7
-          </div>
-        </div>
-
-        <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: var(--radius-sm); margin-top: 16px;">
-          <div style="font-size: 12px; color: #1e40af; line-height: 1.5;">
-            <strong>🔒 Security:</strong> API keys are stored in server environment variables (.env.local) and never exposed to the browser for maximum security.
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">🔧 Optional Integrations</div>
-        <div class="card-description" style="margin-bottom: 16px;">
-          Configure third-party integrations for task creation (optional)
-        </div>
-        
         <div class="input-group">
-          <label class="label">Notion API Key</label>
-          <input type="password" id="key-notion" value="${this.config.apiKeys.notion}" placeholder="secret_...">
-          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">For creating tasks in Notion databases</div>
+          <label class="label">Context / Points</label>
+          <textarea id="email-context" placeholder="What should the email be about?" rows="5">${this.selectedText||""}</textarea>
         </div>
-        <div class="input-group">
-          <label class="label">Jira API Token</label>
-          <input type="password" id="key-jira" value="${this.config.apiKeys.jira}" placeholder="Enter Jira API token">
-          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">For creating issues in Jira projects</div>
-        </div>
-        <div class="input-group">
-          <label class="label">Slack Bot Token</label>
-          <input type="password" id="key-slack" value="${this.config.apiKeys.slack}" placeholder="xoxb-...">
-          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">For sending messages to Slack channels</div>
-        </div>
+        <button class="btn" id="generate-email-btn">✨ Generate Draft</button>
       </div>
-
-      <button class="btn" id="save-settings-btn">💾 Save Configuration</button>
-    `,(t=e.querySelector("#save-settings-btn"))==null||t.addEventListener("click",()=>this.handleSaveSettings())}async handleSummarize(){var t;const e=(t=this.shadowRoot)==null?void 0:t.getElementById("summary-result");if(e){e.classList.remove("hidden"),e.innerHTML='<div class="loading"><div class="spinner"></div><div class="loading-text">Summarizing page...</div></div>';try{const i=document.body.innerText.substring(0,5e3),a=await this.callAPI("summarize",{text:i});if(a.success)e.innerHTML=`
+      <div id="email-result" class="hidden result-box"></div>
+    `,(t=e.querySelector("#generate-email-btn"))==null||t.addEventListener("click",()=>this.handleGenerateEmail()),(i=e.querySelector("#back-to-actions"))==null||i.addEventListener("click",()=>{this.activeTab="actions",this.renderContent()})}async handleSummarize(){var t;const e=(t=this.shadowRoot)==null?void 0:t.getElementById("summary-result");if(e){e.classList.remove("hidden"),e.innerHTML='<div class="loading"><div class="spinner"></div><div class="loading-text">Summarizing page...</div></div>';try{const i=document.body.innerText.substring(0,5e3),r=await this.callAPI("summarize",{text:i});if(r.success)e.innerHTML=`
           <div class="card">
             <div class="card-title">📝 Summary</div>
-            <div class="result-box">${a.data.result}</div>
-            <button class="btn btn-secondary mt-16" onclick="navigator.clipboard.writeText('${a.data.result.replace(/'/g,"\\'")}')">
+            <div class="result-box">${r.data.result}</div>
+            <button class="btn btn-secondary mt-16" onclick="navigator.clipboard.writeText('${r.data.result.replace(/'/g,"\\'")}')">
               📋 Copy Summary
             </button>
           </div>
-        `;else throw new Error(a.error||"Failed to summarize")}catch(i){e.innerHTML=`<div class="alert alert-error">❌ ${i.message}</div>`}}}async handleChat(){var o,s,r,c;const e=(o=this.shadowRoot)==null?void 0:o.getElementById("chat-input"),t=(s=this.shadowRoot)==null?void 0:s.getElementById("chat-messages");if(!e||!t||!e.value.trim())return;const i=e.value.trim();e.value="",t.innerHTML+=`<div class="message user">${i}</div>`,t.scrollTop=t.scrollHeight;const a="loading-"+Date.now();t.innerHTML+=`<div class="message ai" id="${a}"><div class="spinner" style="width:20px;height:20px;border-width:2px;margin:0;"></div></div>`,t.scrollTop=t.scrollHeight;try{const d=await this.callAPI("chat",{text:i}),p=(r=this.shadowRoot)==null?void 0:r.getElementById(a);p&&(d.success?p.innerHTML=d.data.result:p.innerHTML=`<span style="color:var(--error)">Error: ${d.error}</span>`)}catch(d){const p=(c=this.shadowRoot)==null?void 0:c.getElementById(a);p&&(p.innerHTML=`<span style="color:var(--error)">Error: ${d.message}</span>`)}t.scrollTop=t.scrollHeight}async handleCreateTask(){var o,s,r,c,d,p,h;const e=(s=(o=this.shadowRoot)==null?void 0:o.getElementById("task-title"))==null?void 0:s.value,t=(c=(r=this.shadowRoot)==null?void 0:r.getElementById("task-desc"))==null?void 0:c.value,i=(p=(d=this.shadowRoot)==null?void 0:d.getElementById("task-tool"))==null?void 0:p.value,a=(h=this.shadowRoot)==null?void 0:h.getElementById("task-result");if(!(!e||!a)){a.innerHTML='<div class="loading"><div class="spinner"></div><div class="loading-text">Creating task...</div></div>';try{const v=await this.callAPI(`actions/task/${i}`,{text:`Title: ${e}
-Description: ${t}`,options:{apiKey:this.config.apiKeys[i]}});if(v.success)a.innerHTML=`
-          <div class="alert alert-success">
-            ✅ Task created successfully in ${i.charAt(0).toUpperCase()+i.slice(1)}!
+        `;else throw new Error(r.error||"Failed to summarize")}catch(i){e.innerHTML=`<div class="alert alert-error">❌ ${i.message}</div>`}}}async handleChat(){var a,o,c,p;const e=(a=this.shadowRoot)==null?void 0:a.getElementById("chat-input"),t=(o=this.shadowRoot)==null?void 0:o.getElementById("chat-messages");if(!e||!t||!e.value.trim())return;const i=e.value.trim();e.value="",this.hideIntro(),t.innerHTML+=`
+      <div class="message user" style="align-self: flex-end; background: var(--primary); color: #ffffff; padding: 10px 14px; border-radius: 12px 12px 0 12px; max-width: 85%; margin-bottom: 12px; font-size: 14px; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+        ${i}
+      </div>`,t.scrollTop=t.scrollHeight;const r="loading-"+Date.now();t.innerHTML+=`
+      <div class="message ai" id="${r}" style="display: flex; gap: 8px;">
+        <div style="width: 24px; height: 24px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px;">✨</div>
+        <div class="spinner" style="width:16px;height:16px;border-width:2px;margin:0;"></div>
+      </div>`,t.scrollTop=t.scrollHeight;const n=document.body.innerText.substring(0,1e4);try{const h=await this.callAPI("chat",{text:i,context:n}),l=(c=this.shadowRoot)==null?void 0:c.getElementById(r);l&&(h.success?l.innerHTML=`
+            <div style="width: 24px; height: 24px; background: var(--primary); color: white; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; margin-top: 2px;">✨</div>
+            <div style="flex: 1; min-width: 0; white-space: pre-wrap; line-height: 1.5;">${(h.data.result||"").trim()}</div>
+          `:l.innerHTML=`<span style="color:var(--destructive)">Error: ${h.error}</span>`)}catch(h){const l=(p=this.shadowRoot)==null?void 0:p.getElementById(r);l&&(l.innerHTML=`<span style="color:var(--error)">Error: ${h.message}</span>`)}t.scrollTop=t.scrollHeight}async handleCreateTask(){var n,a,o,c,p,h,l;const e=(a=(n=this.shadowRoot)==null?void 0:n.getElementById("task-title"))==null?void 0:a.value,t=(c=(o=this.shadowRoot)==null?void 0:o.getElementById("task-desc"))==null?void 0:c.value,i=(h=(p=this.shadowRoot)==null?void 0:p.getElementById("task-tool"))==null?void 0:h.value,r=(l=this.shadowRoot)==null?void 0:l.getElementById("task-result");if(!(!e||!r)){r.innerHTML='<div class="loading"><div class="spinner"></div><div class="loading-text">Generating task structure...</div></div>';try{await new Promise(v=>setTimeout(v,800)),r.innerHTML=`
+        <div class="alert alert-success">
+          ✅ Task prepared for ${i.charAt(0).toUpperCase()+i.slice(1)}!
+        </div>
+        <div class="card">
+          <div class="result-box" style="background: var(--muted); border: 1px solid var(--border); padding: 12px; border-radius: var(--radius-sm);">
+            <div style="font-weight: 600; margin-bottom: 4px;">${e}</div>
+            <div style="font-size: 13px; color: var(--muted-foreground); white-space: pre-wrap;">${t}</div>
           </div>
-          <div class="card">
-            <div class="result-box"><pre>${JSON.stringify(v.data.result,null,2)}</pre></div>
-          </div>
-        `;else throw new Error(v.error||"Failed to create task")}catch(v){a.innerHTML=`<div class="alert alert-error">❌ ${v.message}</div>`}}}async handleScrape(){var i,a,o;const e=((a=(i=this.shadowRoot)==null?void 0:i.getElementById("scrape-url"))==null?void 0:a.value)||window.location.href,t=(o=this.shadowRoot)==null?void 0:o.getElementById("scrape-result");if(t){t.innerHTML='<div class="loading"><div class="spinner"></div><div class="loading-text">Scraping data with Scraping Dog...</div></div>';try{const s=await this.callAPI("scrape",{text:e});if(s.success){const r=s.data.result,c=(r.summary||"No summary available.").replace(/</g,"&lt;").replace(/>/g,"&gt;");t.innerHTML=`
+          <button class="btn btn-secondary mt-4" onclick="navigator.clipboard.writeText(\`${e}\\n\\n${t}\`)">
+            📋 Copy to Clipboard
+          </button>
+        </div>
+      `}catch(v){r.innerHTML=`<div class="alert alert-error">❌ ${v.message}</div>`}}}async handleScrape(){var i,r,n;const e=((r=(i=this.shadowRoot)==null?void 0:i.getElementById("scrape-url"))==null?void 0:r.value)||window.location.href,t=(n=this.shadowRoot)==null?void 0:n.getElementById("scrape-result");if(t){t.innerHTML='<div class="loading"><div class="spinner"></div><div class="loading-text">Scraping data...</div></div>';try{const a=await this.callAPI("scrape",{text:e});if(a.success){const o=a.data.result,c=(o.summary||"No summary available.").replace(/</g,"&lt;").replace(/>/g,"&gt;");t.innerHTML=`
           <div class="alert alert-success" style="margin-bottom: 12px; flex-shrink: 0;">✅ Data scraped successfully!</div>
           
           <div class="card" style="display: flex; flex-direction: column; height: 500px; padding: 0; overflow: hidden;">
-            <div style="flex-shrink: 0; padding: 16px 16px 8px 16px; border-bottom: 1px solid var(--border); background: var(--bg);">
+            <div style="flex-shrink: 0; padding: 12px 16px 8px 16px; border-bottom: 1px solid var(--border); background: var(--card);">
               <div class="card-title" style="margin: 0;">📝 Summary</div>
             </div>
             
             <div style="
               flex-grow: 1;
-              min-height: 0; /* CRITICAL FIX: Enables scrolling in flex column */
+              min-height: 0;
               overflow-y: auto; 
               padding: 16px; 
               font-size: 13px; 
               line-height: 1.6; 
-              color: var(--text);
-              background: var(--bg);
-              white-space: pre-wrap; /* This preserves AI's bullets and newlines perfectly */
+              color: var(--card-foreground);
+              background: var(--card);
+              white-space: pre-wrap;
             ">
 ${c}
             </div>
@@ -765,31 +754,43 @@ ${c}
               flex-shrink: 0; 
               padding: 12px 16px 16px 16px; 
               border-top: 1px solid var(--border); 
-              background: var(--bg);
+              background: var(--muted);
+              z-index: 10;
+            ">
+              <div class="card-title" style="font-size: 14px; margin-bottom: 8px;">📄 Page Details</div>
+              <div style="font-size: 12px; color: var(--muted-foreground); margin-bottom: 4px;"><strong>Title:</strong> ${o.title}</div>
+              <div style="font-size: 12px; color: var(--muted-foreground);"><strong>URL:</strong> <a href="${o.url}" target="_blank" style="color: var(--primary); text-decoration: none;">${o.url?o.url.substring(0,40)+"...":"N/A"}</a></div>
+            </div>
+            
+            <div style="
+              flex-shrink: 0; 
+              padding: 12px 16px 16px 16px; 
+              border-top: 1px solid var(--border); 
+              background: var(--muted);
               z-index: 10;
             ">
               <div class="card-title" style="font-size: 14px; margin-bottom: 8px;">📄 Page Details</div>
               <div style="background: var(--bg-alt); padding: 12px; border-radius: var(--radius-sm);">
-                <div style="font-weight: 600; font-size: 13px; margin-bottom: 4px; line-height: 1.4;">${r.title}</div>
-                <a href="${r.url}" target="_blank" style="font-size: 12px; color: var(--primary); text-decoration: none; display: block; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${r.url}</a>
+                <div style="font-weight: 600; font-size: 13px; margin-bottom: 4px; line-height: 1.4;">${o.title}</div>
+                <a href="${o.url}" target="_blank" style="font-size: 12px; color: var(--primary); text-decoration: none; display: block; margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${o.url}</a>
                 <div style="display: flex; gap: 12px; font-size: 11px; color: var(--text-muted);">
-                  <span>📝 ${r.contentLength} chars</span>
-                  <span>🕒 ${new Date(r.scrapedAt).toLocaleTimeString()}</span>
+                  <span>📝 ${o.contentLength} chars</span>
+                  <span>🕒 ${new Date(o.scrapedAt).toLocaleTimeString()}</span>
                 </div>
               </div>
 
-              <button class="btn btn-secondary mt-16" style="width: 100%; margin-top: 12px;" onclick="navigator.clipboard.writeText('${(r.summary||"").replace(/'/g,"\\'")}')">
+              <button class="btn btn-secondary mt-16" style="width: 100%; margin-top: 12px;" onclick="navigator.clipboard.writeText('${(o.summary||"").replace(/'/g,"\\'")}')">
                 📋 Copy Summary
               </button>
             </div>
           </div>
-        `}else throw new Error(s.error||"Failed to scrape")}catch(s){s.message==="CONTEXT_INVALIDATED"?this.showContextInvalidatedError(t):this.showError(t,s.message||"Failed to scrape")}}}async handleEnrich(){var i,a,o;const e=(a=(i=this.shadowRoot)==null?void 0:i.getElementById("enrich-text"))==null?void 0:a.value,t=(o=this.shadowRoot)==null?void 0:o.getElementById("enrich-result");if(!(!e||!t)){t.innerHTML='<div class="loading"><div class="spinner"></div><div class="loading-text">Enriching profile with SERP API...</div></div>';try{const s=await this.callAPI("enrich",{text:e});if(s.success){const r=s.data.result;let c="";r.sources&&r.sources.length>0&&(c=`
+        `}else throw new Error(a.error||"Failed to scrape")}catch(a){a.message==="CONTEXT_INVALIDATED"?this.showContextInvalidatedError(t):this.showError(t,a.message||"Failed to scrape")}}}async handleEnrich(){var i,r,n;const e=(r=(i=this.shadowRoot)==null?void 0:i.getElementById("enrich-text"))==null?void 0:r.value,t=(n=this.shadowRoot)==null?void 0:n.getElementById("enrich-result");if(!(!e||!t)){t.innerHTML='<div class="loading"><div class="spinner"></div><div class="loading-text">Enriching profile with SERP API...</div></div>';try{const a=await this.callAPI("enrich",{text:e});if(a.success){const o=a.data.result;let c="";o.sources&&o.sources.length>0&&(c=`
             <div class="card-title" style="margin-top: 16px;">📚 Sources</div>
             <div style="font-size: 11px;">
-              ${r.sources.map(d=>`
+              ${o.sources.map(p=>`
                 <div style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--border);">
-                  <div style="font-weight: 600; margin-bottom: 2px;">${d.title}</div>
-                  <a href="${d.link}" target="_blank" style="color: var(--primary); text-decoration: none;">${new URL(d.link).hostname}</a>
+                  <div style="font-weight: 600; margin-bottom: 2px;">${p.title}</div>
+                  <a href="${p.link}" target="_blank" style="color: var(--primary); text-decoration: none;">${new URL(p.link).hostname}</a>
                 </div>
               `).join("")}
             </div>
@@ -800,40 +801,40 @@ ${c}
             
             <div style="display: flex; gap: 12px; margin-bottom: 16px;">
               <div style="flex: 1;">
-                <div style="font-size: 11px; color: var(--text-muted);">Name</div>
-                <div style="font-weight: 600;">${r.name}</div>
+            <div style="font-size: 11px; color: var(--muted-foreground);">Name</div>
+                <div style="font-weight: 600;">${o.name}</div>
               </div>
               <div style="flex: 1;">
-                <div style="font-size: 11px; color: var(--text-muted);">Role</div>
-                <div style="font-weight: 600;">${r.role}</div>
+                <div style="font-size: 11px; color: var(--muted-foreground);">Role</div>
+                <div style="font-weight: 600;">${o.role}</div>
               </div>
             </div>
 
             <div style="margin-bottom: 16px;">
-              <div style="font-size: 11px; color: var(--text-muted);">Company</div>
-              <div style="font-weight: 600;">${r.company}</div>
+              <div style="font-size: 11px; color: var(--muted-foreground);">Company</div>
+              <div style="font-weight: 600;">${o.company}</div>
             </div>
 
             <div class="card-title">🔑 Key Points</div>
             <ul style="padding-left: 20px; font-size: 12px; margin-bottom: 0;">
-              ${r.keyPoints.map(d=>`<li style="margin-bottom: 6px;">${d}</li>`).join("")}
+              ${o.keyPoints.map(p=>`<li style="margin-bottom: 6px;">${p}</li>`).join("")}
             </ul>
 
             ${c}
           </div>
-        `}else throw new Error(s.error||"Failed to enrich")}catch(s){s.message==="CONTEXT_INVALIDATED"?this.showContextInvalidatedError(t):this.showError(t,s.message||"Failed to enrich")}}}async handleGenerateEmail(){var a,o,s,r,c,d,p;const e=(o=(a=this.shadowRoot)==null?void 0:a.getElementById("email-context"))==null?void 0:o.value,t=(r=(s=this.shadowRoot)==null?void 0:s.getElementById("email-tone"))==null?void 0:r.value,i=(c=this.shadowRoot)==null?void 0:c.getElementById("email-draft");if(!(!e||!i)){i.classList.remove("hidden"),i.innerHTML='<div class="loading"><div class="spinner"></div><div class="loading-text">Generating email...</div></div>';try{const h=await this.callAPI("generate-email",{text:e,tone:t||"professional"});if(h.success){const v=((d=h.data)==null?void 0:d.result)||h.result,b=(v==null?void 0:v.subject)||"No Subject",m=(v==null?void 0:v.body)||"No content generated";i.innerHTML=`
+        `}else throw new Error(a.error||"Failed to enrich")}catch(a){a.message==="CONTEXT_INVALIDATED"?this.showContextInvalidatedError(t):this.showError(t,a.message||"Failed to enrich")}}}async handleGenerateEmail(){var r,n,a,o,c,p,h;const e=(n=(r=this.shadowRoot)==null?void 0:r.getElementById("email-context"))==null?void 0:n.value,t=(o=(a=this.shadowRoot)==null?void 0:a.getElementById("email-tone"))==null?void 0:o.value,i=(c=this.shadowRoot)==null?void 0:c.getElementById("email-result");if(!(!e||!i)){i.classList.remove("hidden"),i.innerHTML='<div class="loading"><div class="spinner"></div><div class="loading-text">Generating email...</div></div>';try{const l=await this.callAPI("generate-email",{text:e,tone:t||"professional"});if(l.success){const v=((p=l.data)==null?void 0:p.result)||l.result,g=(v==null?void 0:v.subject)||"No Subject",m=(v==null?void 0:v.body)||"No content generated";i.innerHTML=`
           <div class="card">
             <div class="card-title">✉️ Email Draft</div>
             <div class="input-group">
               <label class="label">Subject</label>
-              <input type="text" id="email-subject" value="${b}">
+              <input type="text" id="email-subject" value="${g}">
             </div>
             <div class="input-group">
               <label class="label">Body</label>
               <textarea id="email-body" rows="10">${m}</textarea>
             </div>
             <div style="display:flex;gap:12px;">
-              <button class="btn btn-secondary" style="flex:1;background:var(--secondary);" onclick="navigator.clipboard.writeText('Subject: ${b}\\n\\n${m}')">
+              <button class="btn btn-secondary" style="flex:1;background:var(--secondary);" onclick="navigator.clipboard.writeText('Subject: ${g}\\n\\n${m}')">
                 📋 Copy
               </button>
               <button class="btn" style="flex:1;" id="send-email-btn">
@@ -841,7 +842,7 @@ ${c}
               </button>
             </div>
           </div>
-        `,(p=i.querySelector("#send-email-btn"))==null||p.addEventListener("click",()=>this.handleSendEmail())}else throw new Error(h.error||"Failed to generate email")}catch(h){console.error("[Spinabot] Email generation error:",h),h.message==="CONTEXT_INVALIDATED"?this.showContextInvalidatedError(i):this.showError(i,h.message||"Failed to generate email")}}}async handleSendEmail(){var a,o,s,r,c;const e=(o=(a=this.shadowRoot)==null?void 0:a.getElementById("email-subject"))==null?void 0:o.value,t=(r=(s=this.shadowRoot)==null?void 0:s.getElementById("email-body"))==null?void 0:r.value,i=(c=this.shadowRoot)==null?void 0:c.getElementById("email-draft");if(!(!e||!t||!i)){if(!this.config.email.address||!this.config.email.password){alert("Please configure your email settings in the Settings tab first!");return}i.innerHTML='<div class="loading"><div class="spinner"></div><div class="loading-text">Sending email...</div></div>';try{const d=await this.callAPI(`email/send-${this.config.email.provider}`,{text:t,options:{subject:e,from:this.config.email.address,password:this.config.email.password}});if(d.success)i.innerHTML='<div class="alert alert-success">✅ Email sent successfully!</div>';else throw new Error(d.error||"Failed to send email")}catch(d){i.innerHTML=`<div class="alert alert-error">❌ ${d.message}</div>`}}}handleSaveSettings(){var t,i,a,o,s,r,c,d,p,h,v,b,m,x,f,y,w,k,E,T,S;this.config.apiKeys.notion=((i=(t=this.shadowRoot)==null?void 0:t.getElementById("key-notion"))==null?void 0:i.value)||"",this.config.apiKeys.jira=((o=(a=this.shadowRoot)==null?void 0:a.getElementById("key-jira"))==null?void 0:o.value)||"",this.config.apiKeys.slack=((r=(s=this.shadowRoot)==null?void 0:s.getElementById("key-slack"))==null?void 0:r.value)||"",this.config.apiKeys.apify=((d=(c=this.shadowRoot)==null?void 0:c.getElementById("key-apify"))==null?void 0:d.value)||"",this.config.apiKeys.scrapingbee=((h=(p=this.shadowRoot)==null?void 0:p.getElementById("key-scrapingbee"))==null?void 0:h.value)||"",this.config.apiKeys.hunter=((b=(v=this.shadowRoot)==null?void 0:v.getElementById("key-hunter"))==null?void 0:b.value)||"",this.config.apiKeys.clearbit=((x=(m=this.shadowRoot)==null?void 0:m.getElementById("key-clearbit"))==null?void 0:x.value)||"",this.config.email.provider=(y=(f=this.shadowRoot)==null?void 0:f.getElementById("email-provider"))==null?void 0:y.value,this.config.email.address=((k=(w=this.shadowRoot)==null?void 0:w.getElementById("email-address"))==null?void 0:k.value)||"",this.config.email.password=((T=(E=this.shadowRoot)==null?void 0:E.getElementById("email-password"))==null?void 0:T.value)||"",this.saveConfig();const e=(S=this.shadowRoot)==null?void 0:S.getElementById("save-settings-btn");if(e){const A=e.textContent;e.textContent="✅ Saved!",setTimeout(()=>{e.textContent=A},2e3)}}async callAPI(e,t){var i;try{if(!((i=chrome.runtime)!=null&&i.id))throw new Error("CONTEXT_INVALIDATED");return new Promise((a,o)=>{chrome.runtime.sendMessage({type:"API_REQUEST",payload:{action:e,...t}},s=>{if(chrome.runtime.lastError){const r=chrome.runtime.lastError.message;console.error("[Spinabot] Runtime error:",r),r&&(r.includes("Extension context invalidated")||r.includes("message port closed")||r.includes("Receiving end does not exist"))?o(new Error("CONTEXT_INVALIDATED")):o(new Error(r||"Unknown error"))}else s?s.error?o(new Error(s.error)):a(s):o(new Error("No response from background script"))})})}catch(a){throw console.error("[Spinabot] callAPI error:",a),a}}showContextInvalidatedError(e){e.innerHTML=`
+        `,(h=i.querySelector("#send-email-btn"))==null||h.addEventListener("click",()=>this.handleSendEmail())}else throw new Error(l.error||"Failed to generate email")}catch(l){console.error("[Spinabot] Email generation error:",l),l.message==="CONTEXT_INVALIDATED"?this.showContextInvalidatedError(i):this.showError(i,l.message||"Failed to generate email")}}}async handleSendEmail(){var r,n,a,o;const e=(n=(r=this.shadowRoot)==null?void 0:r.getElementById("email-subject"))==null?void 0:n.value,t=(o=(a=this.shadowRoot)==null?void 0:a.getElementById("email-body"))==null?void 0:o.value;if(!e||!t)return;const i=`mailto:?subject=${encodeURIComponent(e)}&body=${encodeURIComponent(t)}`;window.open(i,"_blank")}async callAPI(e,t){var i;try{if(!((i=chrome.runtime)!=null&&i.id))throw new Error("CONTEXT_INVALIDATED");return new Promise((r,n)=>{chrome.runtime.sendMessage({type:"API_REQUEST",payload:{action:e,...t}},a=>{if(chrome.runtime.lastError){const o=chrome.runtime.lastError.message;console.error("[Spinabot] Runtime error:",o),o&&(o.includes("Extension context invalidated")||o.includes("message port closed")||o.includes("Receiving end does not exist"))?n(new Error("CONTEXT_INVALIDATED")):n(new Error(o||"Unknown error"))}else a?a.error?n(new Error(a.error)):r(a):n(new Error("No response from background script"))})})}catch(r){throw console.error("[Spinabot] callAPI error:",r),r}}showContextInvalidatedError(e){e.innerHTML=`
       <div class="alert alert-error">
         <div style="font-weight: 600; margin-bottom: 8px;">⚠️ Extension Reloaded</div>
         <div style="font-size: 13px; line-height: 1.5; margin-bottom: 12px;">
@@ -856,7 +857,7 @@ ${c}
         <div style="font-weight: 600; margin-bottom: 4px;">❌ Error</div>
         <div style="font-size: 13px;">${t}</div>
       </div>
-    `}open(){this.container&&(this.container.style.transform="translateX(0)",this.isVisible=!0)}close(){this.container&&(this.container.style.transform="translateX(100%)",this.isVisible=!1)}minimize(){this.container&&(this.container.style.transform="translateX(calc(100% - 60px))")}toggle(){this.isVisible?this.close():this.open()}switchTab(e){var i;this.activeTab=e;const t=(i=this.shadowRoot)==null?void 0:i.querySelectorAll(".tab");t==null||t.forEach(a=>{a.classList.remove("active"),a.dataset.tab===e&&a.classList.add("active")}),this.renderContent()}setSelectedText(e){this.selectedText=e}}class B{constructor(e){g(this,"container",null);g(this,"shadowRoot",null);g(this,"selectedText","");g(this,"onFeatureSelect",null);this.onFeatureSelect=e,this.createMenu()}createMenu(){this.container=document.createElement("div"),this.container.id="spinabot-quick-menu",this.container.style.cssText=`
+    `}open(){this.container&&(this.container.style.transform="translateX(0)",this.isVisible=!0)}close(){this.container&&(this.container.style.transform="translateX(100%)",this.isVisible=!1)}minimize(){this.container&&(this.container.style.transform="translateX(calc(100% - 60px))")}toggle(){this.isVisible?this.close():this.open()}switchTab(e){var i;this.activeTab=e;const t=(i=this.shadowRoot)==null?void 0:i.querySelectorAll(".tab");t==null||t.forEach(r=>{r.classList.remove("active"),r.dataset.tab===e&&r.classList.add("active")}),this.renderContent()}setSelectedText(e){this.selectedText=e}}class E{constructor(e){u(this,"container",null);u(this,"shadowRoot",null);u(this,"selectedText","");u(this,"onFeatureSelect",null);this.onFeatureSelect=e,this.createMenu()}createMenu(){this.container=document.createElement("div"),this.container.id="spinabot-quick-menu",this.container.style.cssText=`
             position: absolute;
             z-index: 2147483647;
             display: none;
@@ -976,4 +977,4 @@ ${c}
                 </button>
             </div>
             <div class="arrow"></div>
-        `,this.shadowRoot.appendChild(t),this.shadowRoot.querySelectorAll(".menu-item").forEach(a=>{a.addEventListener("click",o=>{const s=o.currentTarget.dataset.feature;s&&this.onFeatureSelect&&(this.onFeatureSelect(s,this.selectedText),this.hide())})}),document.body.appendChild(this.container)}show(e){this.container&&(this.selectedText=e.selectedText,this.container.style.left=`${e.x}px`,this.container.style.top=`${e.y}px`,this.container.style.display="block")}hide(){this.container&&(this.container.style.display="none")}destroy(){this.container&&this.container.parentNode&&this.container.parentNode.removeChild(this.container)}}const I={triggers:{textSelection:!0,rightClick:!0,hover:!1},capabilities:{translate:!0,summarize:!0,explain:!0,rewrite:!0,generateTask:!0,generateEmail:!0}};function M(){try{const n=localStorage.getItem("spinabot-settings");if(n)return{...I,...JSON.parse(n)}}catch(n){console.error("Error reading settings:",n)}return I}let l=null,u=null;function L(){console.log("🚀 Spinabot AI Assistant V2 initialized"),l=new R,l==null||l.close(),u=new B((n,e)=>{l==null||l.open(),l==null||l.switchTab(n),l==null||l.setSelectedText(e),setTimeout(()=>{const t=document.getElementById("spinabot-ai-panel");if(t&&t.shadowRoot){if(n==="ask"){const i=t.shadowRoot.querySelector("#chat-input");i&&(i.value=`Summarize this: "${e}"`,i.focus())}else if(n==="email"){const i=t.shadowRoot.querySelector("#email-context");i&&i.focus()}}},100)}),$()}function $(){document.addEventListener("mouseup",H),document.addEventListener("keydown",n=>{n.altKey&&n.key==="s"&&(n.preventDefault(),l==null||l.toggle())}),chrome.runtime.onMessage.addListener(n=>{console.log("Content script received message:",n),n.type==="SHOW_AI_MENU"&&n.text?(l==null||l.open(),l==null||l.switchTab("ask"),setTimeout(()=>{const e=document.getElementById("spinabot-ai-panel");if(e&&e.shadowRoot){const t=e.shadowRoot.querySelector("#chat-input");t&&(t.value=`Explain this: "${n.text}"`,t.focus())}},100)):n.type==="TOGGLE_SIDE_PANEL"?l==null||l.toggle():n.type==="OPEN_PANEL"&&(l==null||l.open(),n.tab&&(l==null||l.switchTab(n.tab)))})}function H(n){if(!M().triggers.textSelection)return;const t=n.target;t.id==="spinabot-ai-panel"||t.closest("#spinabot-ai-panel")||t.id==="spinabot-quick-menu"||t.closest("#spinabot-quick-menu")||setTimeout(()=>{const i=window.getSelection(),a=i==null?void 0:i.toString().trim();if(a&&a.length>0){const s=i.getRangeAt(0).getBoundingClientRect();u==null||u.show({x:s.left+s.width/2,y:s.bottom+window.scrollY+10,selectedText:a})}else u==null||u.hide()},10)}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",L):L();
+        `,this.shadowRoot.appendChild(t),this.shadowRoot.querySelectorAll(".menu-item").forEach(r=>{r.addEventListener("click",n=>{const a=n.currentTarget.dataset.feature;a&&this.onFeatureSelect&&(this.onFeatureSelect(a,this.selectedText),this.hide())})}),document.body.appendChild(this.container)}show(e){this.container&&(this.selectedText=e.selectedText,this.container.style.left=`${e.x}px`,this.container.style.top=`${e.y}px`,this.container.style.display="block")}hide(){this.container&&(this.container.style.display="none")}destroy(){this.container&&this.container.parentNode&&this.container.parentNode.removeChild(this.container)}}const x={triggers:{textSelection:!0,rightClick:!0,hover:!1},capabilities:{translate:!0,summarize:!0,explain:!0,rewrite:!0,generateTask:!0,generateEmail:!0}};function T(){try{const s=localStorage.getItem("spinabot-settings");if(s)return{...x,...JSON.parse(s)}}catch(s){console.error("Error reading settings:",s)}return x}let d=null,b=null;function f(){console.log("🚀 Spinabot AI Assistant V2 initialized"),d=new k,d==null||d.close(),b=new E((s,e)=>{d==null||d.open(),d==null||d.switchTab(s),d==null||d.setSelectedText(e),setTimeout(()=>{const t=document.getElementById("spinabot-ai-panel");if(t&&t.shadowRoot){if(s==="ask"){const i=t.shadowRoot.querySelector("#chat-input");i&&(i.value=`Summarize this: "${e}"`,i.focus())}else if(s==="email"){const i=t.shadowRoot.querySelector("#email-context");i&&i.focus()}}},100)}),S()}function S(){document.addEventListener("mouseup",L),document.addEventListener("keydown",s=>{s.altKey&&s.key==="s"&&(s.preventDefault(),d==null||d.toggle())}),chrome.runtime.onMessage.addListener(s=>{console.log("Content script received message:",s),s.type==="SHOW_AI_MENU"&&s.text?(d==null||d.open(),d==null||d.switchTab("ask"),setTimeout(()=>{const e=document.getElementById("spinabot-ai-panel");if(e&&e.shadowRoot){const t=e.shadowRoot.querySelector("#chat-input");t&&(t.value=`Explain this: "${s.text}"`,t.focus())}},100)):s.type==="TOGGLE_SIDE_PANEL"?d==null||d.toggle():s.type==="OPEN_PANEL"&&(d==null||d.open(),s.tab&&(d==null||d.switchTab(s.tab)))})}function L(s){if(!T().triggers.textSelection)return;const t=s.target;t.id==="spinabot-ai-panel"||t.closest("#spinabot-ai-panel")||t.id==="spinabot-quick-menu"||t.closest("#spinabot-quick-menu")||setTimeout(()=>{const i=window.getSelection(),r=i==null?void 0:i.toString().trim();if(r&&r.length>0){const a=i.getRangeAt(0).getBoundingClientRect();b==null||b.show({x:a.left+a.width/2,y:a.bottom+window.scrollY+10,selectedText:r})}else b==null||b.hide()},10)}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",f):f();

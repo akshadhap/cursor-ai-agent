@@ -174,7 +174,8 @@ export async function generateTask(text: string): Promise<{
         {
             role: "system",
             content: `You are a task management assistant. Convert the given text into a structured task with title, description, and priority (low/medium/high). 
-      Return ONLY a JSON object with these fields: {"title": "...", "description": "...", "priority": "..."}`,
+      Return ONLY a JSON object with these fields: {"title": "...", "description": "...", "priority": "..."}.
+      Do NOT include markdown formatting or code blocks.`,
         },
         {
             role: "user",
@@ -183,17 +184,22 @@ export async function generateTask(text: string): Promise<{
     ];
 
     const completion = await generateChatCompletion(messages, {
-        temperature: 0.5,
+        temperature: 0.3, // Lower temperature for more deterministic output
         maxTokens: 512,
     });
 
-    const content = completion.choices[0]?.message?.content || "{}";
+    let content = completion.choices[0]?.message?.content || "{}";
+
+    // Sanitize JSON
+    content = content.replace(/```json/g, "").replace(/```/g, "").trim();
 
     try {
         return JSON.parse(content);
-    } catch {
+    } catch (e) {
+        console.warn("Failed to parse task JSON:", content);
+        // Fallback: simple text extraction
         return {
-            title: "New Task",
+            title: text.substring(0, 50).split('\n')[0] || "New Task",
             description: text,
             priority: "medium",
         };
@@ -214,7 +220,8 @@ export async function generateEmail(
         {
             role: "system",
             content: `You are an email writing assistant. Convert the given text into a well-formatted email with subject and body in a ${tone} tone.
-      Return ONLY a JSON object: {"subject": "...", "body": "..."}`,
+      Return ONLY a JSON object: {"subject": "...", "body": "..."}.
+      Do NOT include markdown formatting or code blocks.`,
         },
         {
             role: "user",
@@ -227,14 +234,18 @@ export async function generateEmail(
         maxTokens: 1024,
     });
 
-    const content = completion.choices[0]?.message?.content || "{}";
+    let content = completion.choices[0]?.message?.content || "{}";
+
+    // Sanitize JSON
+    content = content.replace(/```json/g, "").replace(/```/g, "").trim();
 
     try {
         return JSON.parse(content);
-    } catch {
+    } catch (e) {
+        console.warn("Failed to parse email JSON:", content);
         return {
-            subject: "New Email",
-            body: text,
+            subject: "Generated Email",
+            body: text, // Fallback to original text or partial content
         };
     }
 }
@@ -250,9 +261,10 @@ export async function enrichData(text: string): Promise<{
     const messages: ChatMessage[] = [
         {
             role: "system",
-            content: `You are a data enrichment specialist. Analyze the given text (which may be unstructured bio/profile data) and extract structured information.
-      Return ONLY a JSON object with these fields: {"name": "...", "role": "...", "company": "...", "keyPoints": ["..."], "email": "...", "linkedin": "..."}
-      If a field is missing, use empty string/array.`,
+            content: `You are a data enrichment specialist. Analyze the given text (which may be unstructured bio/profile data from search results) and extract structured information.
+      Return ONLY a valid JSON object with these fields: {"name": "...", "role": "...", "company": "...", "keyPoints": ["..."], "email": "...", "linkedin": "..."}
+      If a field is missing, use "Unknown" or empty array.
+      Do NOT include markdown block markers (like \`\`\`json). Return raw JSON only.`,
         },
         {
             role: "user",
@@ -261,29 +273,60 @@ export async function enrichData(text: string): Promise<{
     ];
 
     const completion = await generateChatCompletion(messages, {
-        temperature: 0.3,
+        temperature: 0.2, // Low temperature for consistent JSON
         maxTokens: 1024,
+        model: GROQ_MODELS.LLAMA_70B, // Use 70B model for better reasoning on data extraction
     });
 
-    const content = completion.choices[0]?.message?.content || "{}";
+    let content = completion.choices[0]?.message?.content || "{}";
+
+    // Robust JSON sanitization
+    content = content.replace(/```json/g, "").replace(/```/g, "").trim();
+    // Remove any text before the first '{' and after the last '}'
+    const jsonStart = content.indexOf('{');
+    const jsonEnd = content.lastIndexOf('}');
+    if (jsonStart !== -1 && jsonEnd !== -1) {
+        content = content.substring(jsonStart, jsonEnd + 1);
+    }
 
     try {
-        return JSON.parse(content);
-    } catch {
+        const data = JSON.parse(content);
         return {
-            name: "Unknown",
-            role: "Unknown",
-            company: "Unknown",
-            keyPoints: ["Failed to parse data"],
+            name: data.name || "Unknown",
+            role: data.role || "Unknown",
+            company: data.company || "Unknown",
+            keyPoints: Array.isArray(data.keyPoints) ? data.keyPoints : [],
+            email: data.email,
+            linkedin: data.linkedin
+        };
+    } catch (e) {
+        console.warn("Failed to parse enrichment JSON:", content);
+
+        // Final fallback: Regex extraction
+        return {
+            name: content.match(/"name"\s*:\s*"([^"]+)"/)?.[1] || "Unknown",
+            role: content.match(/"role"\s*:\s*"([^"]+)"/)?.[1] || "Unknown",
+            company: content.match(/"company"\s*:\s*"([^"]+)"/)?.[1] || "Unknown",
+            keyPoints: ["Data parsing partially failed, but search succeeded."],
         };
     }
 }
 
-export async function chatWithAi(text: string): Promise<string> {
+export async function chatWithAi(text: string, context?: string): Promise<string> {
+    const systemPrompt = `You are Spinabot, a helpful, witty, and friendly AI assistant. 
+    ${context ? `\nHere is the content of the webpage the user is currently viewing:\n---\n${context.substring(0, 15000)}\n---\nUse this context to answer questions about the page. If asked to summarize, summarize this content.` : ''}
+    
+    Guidelines:
+    - Chat naturally and conversationally.
+    - Be concise but helpful.
+    - Do NOT start responses with "As an AI" or "I am a large language model".
+    - If the user asks about the page, use the provided context.
+    - Use markdown for formatting (bold, lists) if helpful.`;
+
     const messages: ChatMessage[] = [
         {
             role: "system",
-            content: "You are Spinabot, a helpful AI assistant. Answer the user's questions concisely and helpfully.",
+            content: systemPrompt,
         },
         {
             role: "user",

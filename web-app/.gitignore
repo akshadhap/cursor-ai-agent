@@ -34,3 +34,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local Test Scripts
+test-*.js
+verify_*.js
+debug-*.js
+LINKEDIN_SCRAPING_EXPLAINED.md

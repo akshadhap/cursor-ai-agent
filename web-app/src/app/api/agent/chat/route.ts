@@ -8,13 +8,13 @@ import { chatWithAi } from "@/lib/groq";
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { text } = body;
+        const { text, context } = body;
 
         if (!text) {
             return NextResponse.json({ error: "Text is required" }, { status: 400 });
         }
 
-        const reply = await chatWithAi(text);
+        const reply = await chatWithAi(text, context);
 
         return NextResponse.json({
             success: true,

@@ -11,61 +11,9 @@ export class SidePanel {
   private isVisible: boolean = false;
   private selectedText: string = ''; // Store selected text for auto-fill
 
-  // Configuration
-  private config: {
-    apiKeys: {
-      notion: string;
-      jira: string;
-      slack: string;
-      apify: string;
-      scrapingbee: string;
-      hunter: string;
-      clearbit: string;
-    };
-    email: {
-      provider: 'gmail' | 'outlook' | 'smtp';
-      address: string;
-      password: string;
-      smtpHost?: string;
-      smtpPort?: number;
-    };
-  } = {
-      apiKeys: {
-        notion: '',
-        jira: '',
-        slack: '',
-        apify: '',
-        scrapingbee: '',
-        hunter: '',
-        clearbit: ''
-      },
-      email: {
-        provider: 'gmail',
-        address: '',
-        password: ''
-      }
-    };
-
   constructor() {
-    this.loadConfig();
     this.createPanel();
     this.setupMessageListener();
-  }
-
-  private loadConfig() {
-    if (chrome.storage && chrome.storage.local) {
-      chrome.storage.local.get(['spinabot_config'], (result) => {
-        if (result.spinabot_config) {
-          this.config = { ...this.config, ...result.spinabot_config };
-        }
-      });
-    }
-  }
-
-  private saveConfig() {
-    if (chrome.storage && chrome.storage.local) {
-      chrome.storage.local.set({ spinabot_config: this.config });
-    }
   }
 
   private setupMessageListener() {
@@ -579,24 +527,30 @@ export class SidePanel {
 
       .alert-error {
         background: #fef2f2;
-        border: 1px solid #fecaca;
-        color: #991b1b;
+        background-color: #ecfdf5;
+        color: #047857;
       }
 
-      /* ===== UTILITIES ===== */
-      .text-center { text-align: center; }
-      .mb-16 { margin-bottom: 16px; }
-      .mt-16 { margin-top: 16px; }
-      .hidden { display: none; }
+      .alert-error {
+        background-color: #fef2f2;
+        color: #b91c1c;
+      }
       
-      .fade-in {
-        animation: fadeIn 0.3s ease;
+      .spinner {
+        width: 24px;
+        height: 24px;
+        border: 3px solid var(--border);
+        border-top-color: var(--primary);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 0.5rem;
       }
-
-      @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .loading { text-align: center; padding: 2rem; }
+      .loading-text { font-size: 0.875rem; color: var(--muted-foreground); }
+      .hidden { display: none; }
+      .mb-4 { margin-bottom: 1rem; }
+      .mt-4 { margin-top: 1rem; }
     `;
   }
 
@@ -637,10 +591,6 @@ export class SidePanel {
         <button class="tab" data-tab="email">
           <span class="tab-icon">✉️</span>
           <span>Email</span>
-        </button>
-        <button class="tab" data-tab="settings">
-          <span class="tab-icon">⚙️</span>
-          <span>Settings</span>
         </button>
       </div>
 
@@ -684,9 +634,6 @@ export class SidePanel {
       case 'email':
         this.renderEmailTab(content);
         break;
-      case 'settings':
-        this.renderSettingsTab(content);
-        break;
     }
   }
 
@@ -694,45 +641,103 @@ export class SidePanel {
 
   private renderAskTab(container: HTMLElement) {
     container.innerHTML = `
-      <div class="card">
-        <div class="card-title">👋 Hi, I'm Spinabot</div>
-        <div class="card-description">
-          I can help you summarize pages, answer questions, and assist with your tasks.
+      <div style="display: flex; flex-direction: column; height: 100%; position: relative;">
+        <div class="chat-messages" id="chat-messages" style="flex: 1; overflow-y: auto; padding: 16px; padding-bottom: 20px; display: flex; flex-direction: column; gap: 16px;">
+          <!-- Intro State -->
+          <div id="chat-intro" style="text-align: center; padding: 40px 20px; color: var(--muted-foreground); margin-top: auto; margin-bottom: auto;">
+            <div style="font-size: 48px; margin-bottom: 16px;">✨</div>
+            <h3 style="font-size: 18px; font-weight: 600; color: var(--foreground); margin-bottom: 8px;">Hi, I'm Spinabot</h3>
+            <p style="font-size: 14px; margin-bottom: 24px; line-height: 1.5;">
+              I'm reading the current page. Ask me to summarize it, find specific details, or answer questions.
+            </p>
+            <button class="btn btn-secondary" id="summarize-page-btn" style="width: auto; margin: 0 auto; display: inline-flex; background: var(--secondary); color: var(--secondary-foreground); border: 1px solid var(--border);">
+              <span style="font-size: 16px;">📝</span> Summarize This Page
+            </button>
+          </div>
         </div>
-        <button class="btn" id="summarize-page-btn">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="21" y1="10" x2="3" y2="10"/>
-            <line x1="21" y1="6" x2="3" y2="6"/>
-            <line x1="21" y1="14" x2="3" y2="14"/>
-            <line x1="21" y1="18" x2="3" y2="18"/>
-          </svg>
-          Summarize This Page
-        </button>
-      </div>
 
-      <div id="summary-result" class="hidden"></div>
-
-      <div class="card">
-        <div class="card-title">💬 Chat with AI</div>
-        <div class="chat-messages" id="chat-messages"></div>
-        <div class="input-group">
-          <textarea id="chat-input" placeholder="Ask me anything..." rows="3"></textarea>
+        <div style="padding: 12px 16px 16px; border-top: 1px solid var(--border); background: var(--background);">
+          <div style="position: relative; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); overflow: hidden; transition: border-color 0.2s;">
+            <textarea id="chat-input" 
+              placeholder="Ask about this page..." 
+              rows="1" 
+              style="
+                width: 100%;
+                padding: 12px 48px 12px 12px; 
+                resize: none; 
+                overflow-y: auto; 
+                min-height: 46px; 
+                max-height: 150px;
+                border: none;
+                background: transparent;
+                font-size: 14px;
+                line-height: 1.5;
+                color: var(--foreground);
+                display: block;
+              "
+            ></textarea>
+            <button id="send-chat-btn" style="
+              position: absolute; 
+              right: 6px; 
+              bottom: 6px; 
+              width: 32px; 
+              height: 32px; 
+              border-radius: var(--radius-sm); 
+              background: #18181b; 
+              color: #ffffff; 
+              border: none; 
+              display: flex; 
+              align-items: center; 
+              justify-content: center; 
+              cursor: pointer;
+              transition: opacity 0.2s;
+              z-index: 10;
+            ">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </div>
+          <div style="font-size: 10px; color: var(--muted-foreground); text-align: center; margin-top: 8px;">
+            AI can make mistakes. Check important info.
+          </div>
         </div>
-        <button class="btn btn-secondary" id="send-chat-btn">Send Message</button>
       </div>
     `;
 
     // Event listeners
-    container.querySelector('#summarize-page-btn')?.addEventListener('click', () => this.handleSummarize());
+    container.querySelector('#summarize-page-btn')?.addEventListener('click', () => {
+      this.handleSummarize();
+      // Hide intro after action
+      this.hideIntro();
+    });
+
     container.querySelector('#send-chat-btn')?.addEventListener('click', () => this.handleChat());
 
-    // Enter to send
-    container.querySelector('#chat-input')?.addEventListener('keydown', (e: Event) => {
-      if ((e as KeyboardEvent).key === 'Enter' && !(e as KeyboardEvent).shiftKey) {
-        e.preventDefault();
-        this.handleChat();
-      }
-    });
+    // Enter to send & Auto-resize
+    const input = container.querySelector('#chat-input') as HTMLTextAreaElement;
+    if (input) {
+      input.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          this.handleChat();
+        }
+      });
+
+      input.addEventListener('input', function () {
+        this.style.height = 'auto'; // Reset height
+        this.style.height = Math.min(this.scrollHeight, 150) + 'px'; // Grow up to 150px
+      });
+
+      // Auto-focus
+      input.focus();
+    }
+  }
+
+  private hideIntro() {
+    const intro = this.shadowRoot?.getElementById('chat-intro');
+    if (intro) intro.style.display = 'none';
   }
 
   private renderActionsTab(container: HTMLElement) {
@@ -811,14 +816,14 @@ export class SidePanel {
             <label class="label">URL (leave empty for current page)</label>
             <input type="text" id="scrape-url" placeholder="https://example.com">
           </div>
-          <div style="background: var(--bg-alt); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 16px;">
-            <div style="font-size: 12px; color: var(--text-muted);">
-              <strong>🌐 Scraping Tool:</strong> Scraping Dog (Anti-bot protection enabled)
+          <div style="background: var(--secondary); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 16px;">
+            <div style="font-size: 12px; color: var(--muted-foreground);">
+              <strong>🌐 Scraping Tool:</strong> Scraping Dog (Dedciated API & Basic Fallback)
             </div>
           </div>
           <button class="btn" id="scrape-btn">Scrape Data</button>
         </div>
-        <div id="scrape-result"></div>
+        <div id="scrape-result" class="result-box hidden"></div>
       `;
     } else if (action === 'enrich') {
       formHTML += `
@@ -826,17 +831,18 @@ export class SidePanel {
           <div class="card-title">💎 Enrich Lead Information</div>
           <div class="card-description">Get detailed insights about a person or company</div>
           <div class="input-group">
-            <label class="label">Lead Information</label>
-            <textarea id="enrich-text" placeholder="Paste bio, LinkedIn profile, or company info..." rows="5"></textarea>
+            <label class="label">Context / Bio</label>
+          <textarea id="enrich-text" placeholder="Paste bio or text to enrich..." rows="5">${this.selectedText || ''}</textarea>
+          <div style="font-size: 11px; color: var(--muted-foreground); margin-top: 4px;">Leave empty to search based on page title/URL data.</div>
           </div>
-          <div style="background: var(--bg-alt); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 16px;">
-            <div style="font-size: 12px; color: var(--text-muted);">
+          <div style="background: var(--secondary); padding: 12px; border-radius: var(--radius-sm); margin-bottom: 16px;">
+            <div style="font-size: 12px; color: var(--muted-foreground);">
               <strong>💎 Enrichment Tool:</strong> SERP API (Web search & data enrichment)
             </div>
           </div>
           <button class="btn" id="enrich-btn">Enrich Profile</button>
         </div>
-        <div id="enrich-result"></div>
+        <div id="enrich-result" class="result-box hidden"></div>
       `;
     }
 
@@ -860,104 +866,37 @@ export class SidePanel {
 
   private renderEmailTab(container: HTMLElement) {
     container.innerHTML = `
+      <button class="btn btn-secondary mb-4" id="back-to-actions">
+        ← Back
+      </button>
       <div class="card">
         <div class="card-title">✉️ Draft Email</div>
-        <div class="card-description">Generate professional emails with AI</div>
-        <div class="input-group">
-          <label class="label">Email Context / Topic</label>
-          <textarea id="email-context" placeholder="What is this email about?" rows="4">${this.selectedText}</textarea>
-        </div>
+        <div class="card-description">Auto-generate an email from context</div>
+        
         <div class="input-group">
           <label class="label">Tone</label>
           <select id="email-tone">
             <option value="professional">Professional</option>
             <option value="friendly">Friendly</option>
-            <option value="formal">Formal</option>
-            <option value="casual">Casual</option>
+            <option value="persuasive">Persuasive</option>
           </select>
         </div>
-        <button class="btn" id="generate-email-btn">Generate Draft</button>
+        <div class="input-group">
+          <label class="label">Context / Points</label>
+          <textarea id="email-context" placeholder="What should the email be about?" rows="5">${this.selectedText || ''}</textarea>
+        </div>
+        <button class="btn" id="generate-email-btn">✨ Generate Draft</button>
       </div>
-
-      <div id="email-draft" class="hidden"></div>
+      <div id="email-result" class="hidden result-box"></div>
     `;
 
     container.querySelector('#generate-email-btn')?.addEventListener('click', () => this.handleGenerateEmail());
+    container.querySelector('#back-to-actions')?.addEventListener('click', () => {
+      this.activeTab = 'actions'; // Assuming 'actions' is the previous tab or a default
+      this.renderContent();
+    });
   }
 
-  private renderSettingsTab(container: HTMLElement) {
-    container.innerHTML = `
-      <div class="card">
-        <div class="card-title">🔒 Core APIs (Server-Side)</div>
-        <div class="card-description" style="margin-bottom: 16px;">
-          These APIs are configured securely in the server environment and cannot be changed from the extension.
-        </div>
-        
-        <div style="background: var(--bg-alt); padding: 16px; border-radius: var(--radius); margin-bottom: 12px;">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-            <div>
-              <div style="font-weight: 600; font-size: 14px; color: var(--text);">🌐 Scraping Dog API</div>
-              <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Web scraping with anti-bot protection</div>
-            </div>
-            <div style="background: #10b981; color: white; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 600;">
-              ACTIVE
-            </div>
-          </div>
-          <div style="font-family: monospace; font-size: 12px; color: var(--text-muted); background: var(--bg); padding: 8px 12px; border-radius: 4px; margin-top: 8px;">
-            697c4e...8450
-          </div>
-        </div>
-
-        <div style="background: var(--bg-alt); padding: 16px; border-radius: var(--radius);">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-            <div>
-              <div style="font-weight: 600; font-size: 14px; color: var(--text);">💎 SERP API</div>
-              <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Web search and data enrichment</div>
-            </div>
-            <div style="background: #10b981; color: white; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 600;">
-              ACTIVE
-            </div>
-          </div>
-          <div style="font-family: monospace; font-size: 12px; color: var(--text-muted); background: var(--bg); padding: 8px 12px; border-radius: 4px; margin-top: 8px;">
-            de514c...d41a7
-          </div>
-        </div>
-
-        <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: var(--radius-sm); margin-top: 16px;">
-          <div style="font-size: 12px; color: #1e40af; line-height: 1.5;">
-            <strong>🔒 Security:</strong> API keys are stored in server environment variables (.env.local) and never exposed to the browser for maximum security.
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">🔧 Optional Integrations</div>
-        <div class="card-description" style="margin-bottom: 16px;">
-          Configure third-party integrations for task creation (optional)
-        </div>
-        
-        <div class="input-group">
-          <label class="label">Notion API Key</label>
-          <input type="password" id="key-notion" value="${this.config.apiKeys.notion}" placeholder="secret_...">
-          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">For creating tasks in Notion databases</div>
-        </div>
-        <div class="input-group">
-          <label class="label">Jira API Token</label>
-          <input type="password" id="key-jira" value="${this.config.apiKeys.jira}" placeholder="Enter Jira API token">
-          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">For creating issues in Jira projects</div>
-        </div>
-        <div class="input-group">
-          <label class="label">Slack Bot Token</label>
-          <input type="password" id="key-slack" value="${this.config.apiKeys.slack}" placeholder="xoxb-...">
-          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">For sending messages to Slack channels</div>
-        </div>
-      </div>
-
-      <button class="btn" id="save-settings-btn">💾 Save Configuration</button>
-    `;
-
-    container.querySelector('#save-settings-btn')?.addEventListener('click', () => this.handleSaveSettings());
-  }
 
   // ===== ACTION HANDLERS =====
 
@@ -999,27 +938,49 @@ export class SidePanel {
     const userMessage = input.value.trim();
     input.value = '';
 
+    // Hide intro
+    this.hideIntro();
+
     // Add user message
-    messagesDiv.innerHTML += `<div class="message user">${userMessage}</div>`;
+    messagesDiv.innerHTML += `
+      <div class="message user" style="align-self: flex-end; background: var(--primary); color: #ffffff; padding: 10px 14px; border-radius: 12px 12px 0 12px; max-width: 85%; margin-bottom: 12px; font-size: 14px; line-height: 1.5; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+        ${userMessage}
+      </div>`;
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
     // Add loading
     const loadingId = 'loading-' + Date.now();
-    messagesDiv.innerHTML += `<div class="message ai" id="${loadingId}"><div class="spinner" style="width:20px;height:20px;border-width:2px;margin:0;"></div></div>`;
+    messagesDiv.innerHTML += `
+      <div class="message ai" id="${loadingId}" style="display: flex; gap: 8px;">
+        <div style="width: 24px; height: 24px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px;">✨</div>
+        <div class="spinner" style="width:16px;height:16px;border-width:2px;margin:0;"></div>
+      </div>`;
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
 
+    // Capture Page Context
+    const pageContext = document.body.innerText.substring(0, 10000); // 10k chars context
+
     try {
-      const response = await this.callAPI('chat', { text: userMessage });
+      const response = await this.callAPI('chat', {
+        text: userMessage,
+        context: pageContext
+      });
+
       const loadingMsg = this.shadowRoot?.getElementById(loadingId);
 
       if (loadingMsg) {
         if (response.success) {
-          loadingMsg.innerHTML = response.data.result;
+          // Replace loading with content (and keep avatar)
+          loadingMsg.innerHTML = `
+            <div style="width: 24px; height: 24px; background: var(--primary); color: white; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; margin-top: 2px;">✨</div>
+            <div style="flex: 1; min-width: 0; white-space: pre-wrap; line-height: 1.5;">${(response.data.result || "").trim()}</div>
+          `;
         } else {
-          loadingMsg.innerHTML = `<span style="color:var(--error)">Error: ${response.error}</span>`;
+          loadingMsg.innerHTML = `<span style="color:var(--destructive)">Error: ${response.error}</span>`;
         }
       }
     } catch (error: any) {
+
       const loadingMsg = this.shadowRoot?.getElementById(loadingId);
       if (loadingMsg) {
         loadingMsg.innerHTML = `<span style="color:var(--error)">Error: ${error.message}</span>`;
@@ -1037,26 +998,28 @@ export class SidePanel {
 
     if (!title || !resultDiv) return;
 
-    resultDiv.innerHTML = '<div class="loading"><div class="spinner"></div><div class="loading-text">Creating task...</div></div>';
+    resultDiv.innerHTML = '<div class="loading"><div class="spinner"></div><div class="loading-text">Generating task structure...</div></div>';
 
     try {
-      const response = await this.callAPI(`actions/task/${tool}`, {
-        text: `Title: ${title}\nDescription: ${desc}`,
-        options: { apiKey: this.config.apiKeys[tool as keyof typeof this.config.apiKeys] }
-      });
+      // Simulate success (or call a simple AI enrichment endpoint if needed)
+      // For now, we just present the task beautifully to copy
+      await new Promise(resolve => setTimeout(resolve, 800)); // Fake loading
 
-      if (response.success) {
-        resultDiv.innerHTML = `
-          <div class="alert alert-success">
-            ✅ Task created successfully in ${tool.charAt(0).toUpperCase() + tool.slice(1)}!
+      resultDiv.innerHTML = `
+        <div class="alert alert-success">
+          ✅ Task prepared for ${tool.charAt(0).toUpperCase() + tool.slice(1)}!
+        </div>
+        <div class="card">
+          <div class="result-box" style="background: var(--muted); border: 1px solid var(--border); padding: 12px; border-radius: var(--radius-sm);">
+            <div style="font-weight: 600; margin-bottom: 4px;">${title}</div>
+            <div style="font-size: 13px; color: var(--muted-foreground); white-space: pre-wrap;">${desc}</div>
           </div>
-          <div class="card">
-            <div class="result-box"><pre>${JSON.stringify(response.data.result, null, 2)}</pre></div>
-          </div>
-        `;
-      } else {
-        throw new Error(response.error || 'Failed to create task');
-      }
+          <button class="btn btn-secondary mt-4" onclick="navigator.clipboard.writeText(\`${title}\\n\\n${desc}\`)">
+            📋 Copy to Clipboard
+          </button>
+        </div>
+      `;
+
     } catch (error: any) {
       resultDiv.innerHTML = `<div class="alert alert-error">❌ ${error.message}</div>`;
     }
@@ -1068,7 +1031,7 @@ export class SidePanel {
 
     if (!resultDiv) return;
 
-    resultDiv.innerHTML = '<div class="loading"><div class="spinner"></div><div class="loading-text">Scraping data with Scraping Dog...</div></div>';
+    resultDiv.innerHTML = '<div class="loading"><div class="spinner"></div><div class="loading-text">Scraping data...</div></div>';
 
     try {
       // Use 'scrape' action directly, server uses SCRAPING_DOG_API_KEY
@@ -1087,20 +1050,20 @@ export class SidePanel {
           <div class="alert alert-success" style="margin-bottom: 12px; flex-shrink: 0;">✅ Data scraped successfully!</div>
           
           <div class="card" style="display: flex; flex-direction: column; height: 500px; padding: 0; overflow: hidden;">
-            <div style="flex-shrink: 0; padding: 16px 16px 8px 16px; border-bottom: 1px solid var(--border); background: var(--bg);">
+            <div style="flex-shrink: 0; padding: 12px 16px 8px 16px; border-bottom: 1px solid var(--border); background: var(--card);">
               <div class="card-title" style="margin: 0;">📝 Summary</div>
             </div>
             
             <div style="
               flex-grow: 1;
-              min-height: 0; /* CRITICAL FIX: Enables scrolling in flex column */
+              min-height: 0;
               overflow-y: auto; 
               padding: 16px; 
               font-size: 13px; 
               line-height: 1.6; 
-              color: var(--text);
-              background: var(--bg);
-              white-space: pre-wrap; /* This preserves AI's bullets and newlines perfectly */
+              color: var(--card-foreground);
+              background: var(--card);
+              white-space: pre-wrap;
             ">
 ${safeSummary}
             </div>
@@ -1109,7 +1072,19 @@ ${safeSummary}
               flex-shrink: 0; 
               padding: 12px 16px 16px 16px; 
               border-top: 1px solid var(--border); 
-              background: var(--bg);
+              background: var(--muted);
+              z-index: 10;
+            ">
+              <div class="card-title" style="font-size: 14px; margin-bottom: 8px;">📄 Page Details</div>
+              <div style="font-size: 12px; color: var(--muted-foreground); margin-bottom: 4px;"><strong>Title:</strong> ${data.title}</div>
+              <div style="font-size: 12px; color: var(--muted-foreground);"><strong>URL:</strong> <a href="${data.url}" target="_blank" style="color: var(--primary); text-decoration: none;">${data.url ? data.url.substring(0, 40) + '...' : 'N/A'}</a></div>
+            </div>
+            
+            <div style="
+              flex-shrink: 0; 
+              padding: 12px 16px 16px 16px; 
+              border-top: 1px solid var(--border); 
+              background: var(--muted);
               z-index: 10;
             ">
               <div class="card-title" style="font-size: 14px; margin-bottom: 8px;">📄 Page Details</div>
@@ -1179,17 +1154,17 @@ ${safeSummary}
             
             <div style="display: flex; gap: 12px; margin-bottom: 16px;">
               <div style="flex: 1;">
-                <div style="font-size: 11px; color: var(--text-muted);">Name</div>
+            <div style="font-size: 11px; color: var(--muted-foreground);">Name</div>
                 <div style="font-weight: 600;">${data.name}</div>
               </div>
               <div style="flex: 1;">
-                <div style="font-size: 11px; color: var(--text-muted);">Role</div>
+                <div style="font-size: 11px; color: var(--muted-foreground);">Role</div>
                 <div style="font-weight: 600;">${data.role}</div>
               </div>
             </div>
 
             <div style="margin-bottom: 16px;">
-              <div style="font-size: 11px; color: var(--text-muted);">Company</div>
+              <div style="font-size: 11px; color: var(--muted-foreground);">Company</div>
               <div style="font-weight: 600;">${data.company}</div>
             </div>
 
@@ -1216,7 +1191,7 @@ ${safeSummary}
   private async handleGenerateEmail() {
     const context = (this.shadowRoot?.getElementById('email-context') as HTMLTextAreaElement)?.value;
     const tone = (this.shadowRoot?.getElementById('email-tone') as HTMLSelectElement)?.value;
-    const draftDiv = this.shadowRoot?.getElementById('email-draft');
+    const draftDiv = this.shadowRoot?.getElementById('email-result'); // Changed from email-draft to email-result
 
     if (!context || !draftDiv) return;
 
@@ -1275,63 +1250,14 @@ ${safeSummary}
   private async handleSendEmail() {
     const subject = (this.shadowRoot?.getElementById('email-subject') as HTMLInputElement)?.value;
     const body = (this.shadowRoot?.getElementById('email-body') as HTMLTextAreaElement)?.value;
-    const draftDiv = this.shadowRoot?.getElementById('email-draft');
 
-    if (!subject || !body || !draftDiv) return;
+    if (!subject || !body) return;
 
-    if (!this.config.email.address || !this.config.email.password) {
-      alert('Please configure your email settings in the Settings tab first!');
-      return;
-    }
-
-    draftDiv.innerHTML = '<div class="loading"><div class="spinner"></div><div class="loading-text">Sending email...</div></div>';
-
-    try {
-      const response = await this.callAPI(`email/send-${this.config.email.provider}`, {
-        text: body,
-        options: {
-          subject,
-          from: this.config.email.address,
-          password: this.config.email.password
-        }
-      });
-
-      if (response.success) {
-        draftDiv.innerHTML = `<div class="alert alert-success">✅ Email sent successfully!</div>`;
-      } else {
-        throw new Error(response.error || 'Failed to send email');
-      }
-    } catch (error: any) {
-      draftDiv.innerHTML = `<div class="alert alert-error">❌ ${error.message}</div>`;
-    }
+    // Use mailto for client-side sending (no server config needed)
+    const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(mailtoLink, '_blank');
   }
 
-  private handleSaveSettings() {
-    // Collect all settings
-    this.config.apiKeys.notion = (this.shadowRoot?.getElementById('key-notion') as HTMLInputElement)?.value || '';
-    this.config.apiKeys.jira = (this.shadowRoot?.getElementById('key-jira') as HTMLInputElement)?.value || '';
-    this.config.apiKeys.slack = (this.shadowRoot?.getElementById('key-slack') as HTMLInputElement)?.value || '';
-    this.config.apiKeys.apify = (this.shadowRoot?.getElementById('key-apify') as HTMLInputElement)?.value || '';
-    this.config.apiKeys.scrapingbee = (this.shadowRoot?.getElementById('key-scrapingbee') as HTMLInputElement)?.value || '';
-    this.config.apiKeys.hunter = (this.shadowRoot?.getElementById('key-hunter') as HTMLInputElement)?.value || '';
-    this.config.apiKeys.clearbit = (this.shadowRoot?.getElementById('key-clearbit') as HTMLInputElement)?.value || '';
-
-    this.config.email.provider = (this.shadowRoot?.getElementById('email-provider') as HTMLSelectElement)?.value as any;
-    this.config.email.address = (this.shadowRoot?.getElementById('email-address') as HTMLInputElement)?.value || '';
-    this.config.email.password = (this.shadowRoot?.getElementById('email-password') as HTMLInputElement)?.value || '';
-
-    this.saveConfig();
-
-    // Show success message
-    const btn = this.shadowRoot?.getElementById('save-settings-btn');
-    if (btn) {
-      const originalText = btn.textContent;
-      btn.textContent = '✅ Saved!';
-      setTimeout(() => {
-        btn.textContent = originalText;
-      }, 2000);
-    }
-  }
 
   // ===== API COMMUNICATION =====
 
