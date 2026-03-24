@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Spinabot Cursor AI</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      width: 320px;
+      min-height: 400px;
+      background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+      color: #f1f5f9;
+      font-family: system-ui, -apple-system, sans-serif;
+      padding: 20px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .logo {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 12px;
+    }
+
+    .logo svg {
+      width: 32px;
+      height: 32px;
+      stroke: white;
+    }
+
+    h1 {
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: #94a3b8;
+    }
+
+    .section {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #f1f5f9;
+    }
+
+    .shortcut-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .shortcut-item:last-child {
+      border-bottom: none;
+    }
+
+    .shortcut-label {
+      font-size: 13px;
+      color: #94a3b8;
+    }
+
+    .shortcut-key {
+      background: rgba(99, 102, 241, 0.2);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #6366f1;
+    }
+
+    .button {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    }
+
+    .button svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .status {
+      text-align: center;
+      padding: 12px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      border-radius: 8px;
+      color: #10b981;
+      font-size: 13px;
+      margin-bottom: 16px;
+    }
+
+    .footer {
+      text-align: center;
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+        <path d="M2 17l10 5 10-5"></path>
+        <path d="M2 12l10 5 10-5"></path>
+      </svg>
+    </div>
+    <h1>Spinabot Cursor AI</h1>
+    <p class="subtitle">AI-powered browsing assistant</p>
+  </div>
+
+  <div class="status">
+    ✓ Extension is active
+  </div>
+
+  <div class="section">
+    <div class="section-title">Keyboard Shortcuts</div>
+    <div class="shortcut-item">
+      <span class="shortcut-label">Toggle Panel</span>
+      <span class="shortcut-key">Alt + S</span>
+    </div>
+    <div class="shortcut-item">
+      <span class="shortcut-label">Select Text</span>
+      <span class="shortcut-key">Click Bubble</span>
+    </div>
+  </div>
+
+  <button class="button" id="open-dashboard">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+      <polyline points="15 3 21 3 21 9"></polyline>
+      <line x1="10" y1="14" x2="21" y2="3"></line>
+    </svg>
+    Open Dashboard
+  </button>
+
+  <div class="footer">
+    Version 1.0.0 • Powered by Groq AI
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

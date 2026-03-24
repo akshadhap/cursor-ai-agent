@@ -1,0 +1,129 @@
+name: Promote Dev to QA
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type "promote" to confirm'
+        required: true
+        default: ''
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  show-changes:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirmation == 'promote'
+    outputs:
+      has_changes: ${{ steps.check.outputs.has_changes }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch branches
+        run: |
+          git fetch origin dev
+          git fetch origin qa
+
+      - name: Show commit differences
+        id: check
+        run: |
+          echo "## 📊 Changes to be promoted from dev to qa" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check if there are differences
+          if git diff --quiet origin/qa...origin/dev; then
+            echo "⚠️ No changes to promote - dev and qa are identical" >> $GITHUB_STEP_SUMMARY
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+          
+          # Show commit log
+          echo "### Commits:" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          git log origin/qa..origin/dev --oneline --no-decorate >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Show file changes
+          echo "### Files changed:" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          git diff --stat origin/qa...origin/dev >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+  approve-promotion:
+    needs: show-changes
+    runs-on: ubuntu-latest
+    if: needs.show-changes.outputs.has_changes == 'true'
+    environment:
+      name: qa-promotion-approval
+    
+    steps:
+      - name: Approval checkpoint
+        run: |
+          echo "✅ Promotion approved by ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "Proceeding with merge to qa branch..." >> $GITHUB_STEP_SUMMARY
+
+  promote:
+    needs: approve-promotion
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+
+      - name: Fetch latest branches
+        run: |
+          git fetch origin dev
+          git fetch origin qa
+
+      - name: Checkout QA branch
+        run: git checkout qa
+
+      - name: Merge Dev into QA
+        run: |
+          git merge origin/dev --no-ff -m "Promote dev to qa - $(date +'%Y-%m-%d %H:%M:%S')"
+
+      - name: Get dev commit SHA
+        id: get-sha
+        run: |
+          DEV_SHA=$(git rev-parse origin/dev)
+          echo "dev_sha=$DEV_SHA" >> $GITHUB_OUTPUT
+          echo "Dev SHA: $DEV_SHA"
+
+      - name: Push to QA
+        run: git push origin qa
+
+      - name: Trigger QA deployment with dev image
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run qa-deployment.yml \
+            --ref qa \
+            -f dev_image_tag=${{ steps.get-sha.outputs.dev_sha }}
+
+      - name: Create promotion summary
+        run: |
+          echo "## ✅ Successfully promoted dev to qa" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Date:** $(date)" >> $GITHUB_STEP_SUMMARY
+          echo "**Triggered by:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Dev commit SHA:** ${{ steps.get-sha.outputs.dev_sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "🚀 QA deployment triggered with dev image (no rebuild needed)" >> $GITHUB_STEP_SUMMARY
+          echo "The same Docker image tested in dev will be deployed to QA." >> $GITHUB_STEP_SUMMARY

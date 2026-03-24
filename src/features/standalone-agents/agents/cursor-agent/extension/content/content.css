@@ -1,0 +1,53 @@
+/* Content script styles for Spinabot Cursor AI */
+
+/* Reset for extension elements */
+#spinabot-cursor-bubble,
+#spinabot-quick-menu,
+#spinabot-side-panel-container {
+  box-sizing: border-box;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.5;
+}
+
+/* Prevent conflicts with page styles */
+#spinabot-cursor-bubble *,
+#spinabot-quick-menu *,
+#spinabot-side-panel-container * {
+  box-sizing: border-box;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Ensure proper z-index layering */
+#spinabot-cursor-bubble {
+  z-index: 2147483647 !important;
+}
+
+#spinabot-quick-menu {
+  z-index: 2147483647 !important;
+}
+
+#spinabot-side-panel-container {
+  z-index: 2147483647 !important;
+}

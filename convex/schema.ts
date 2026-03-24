@@ -1,0 +1,305 @@
+import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
+
+/* ───────────────────────────────────────────────
+   SHARED SCHEMAS
+─────────────────────────────────────────────── */
+
+export const logoSchema = v.object({
+  type: v.union(v.literal("default"), v.literal("upload"), v.literal("url")),
+  storageId: v.optional(v.id("_storage")),
+  externalUrl: v.optional(v.string()),
+  fileName: v.optional(v.string()),
+  mimeType: v.optional(v.string()),
+  size: v.optional(v.number()),
+  updatedAt: v.number(),
+});
+
+export const appearanceSchema = v.object({
+  primaryColor: v.optional(v.string()),
+  size: v.optional(
+    v.union(v.number(), v.literal("small"), v.literal("medium"), v.literal("large"))
+  ),
+  logo: v.optional(logoSchema),
+});
+
+/* ───────────────────────────────────────────────
+   SCHEMA
+─────────────────────────────────────────────── */
+
+export default defineSchema({
+  /* ───────── USERS ───────── */
+  users: defineTable({
+    name: v.string(),
+    email: v.string(),
+    authId: v.string(),
+    entityId: v.optional(v.string()),
+    
+  }).index("by_entity_id", ["entityId"]),
+
+  /* ───────── CHATBOTS ───────── */
+  chatbots: defineTable({
+    entityId: v.string(),
+    name: v.string(),
+    description: v.optional(v.string()),
+    knowledgeBaseId: v.optional(v.id("knowledgeBases")),
+    greetMessage: v.string(),
+    defaultSuggestions: v.object({
+      suggestion1: v.optional(v.string()),
+      suggestion2: v.optional(v.string()),
+      suggestion3: v.optional(v.string()),
+    }),
+    isActive: v.boolean(),
+    isDefault: v.optional(v.boolean()),
+
+    chatbotId: v.optional(v.string()),
+    appearance: v.optional(appearanceSchema),
+    customSystemPrompt: v.optional(v.string()),
+    aiAvatarEnabled: v.optional(v.boolean()),
+    beyondPresenceAgentId: v.optional(v.string()),
+    vapiSettings: v.optional(
+      v.object({
+        assistantId: v.optional(v.string()),
+        phoneNumber: v.optional(v.string()),
+      })
+    ),
+
+    createdAt: v.optional(v.number()),
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_entity_id", ["entityId"])
+    .index("by_entity_and_active", ["entityId", "isActive"])
+    .index("by_knowledge_base_id", ["knowledgeBaseId"])
+    .index("by_chatbot_id", ["chatbotId"])
+    .index("by_beyond_presence_agent_id", ["beyondPresenceAgentId"]),
+
+  /* ───────── KNOWLEDGE BASES ───────── */
+  knowledgeBases: defineTable({
+    entityId: v.string(),
+    name: v.string(),
+    description: v.optional(v.string()),
+
+    // ✅ single source of truth (post-migration)
+    ragNamespace: v.optional(v.string()),
+    
+
+    fileCount: v.number(),
+    knowledgeBaseId: v.optional(v.string()),
+    createdAt: v.optional(v.number()),
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_entity_id", ["entityId"])
+    .index("by_rag_namespace", ["ragNamespace"])
+    .index("by_knowledge_base_id", ["knowledgeBaseId"]),
+
+  /* ───────── WIDGET SETTINGS ───────── */
+  widgetSettings: defineTable({
+    entityId: v.string(),
+    greetMessage: v.string(),
+    defaultSuggestions: v.object({
+      suggestion1: v.optional(v.string()),
+      suggestion2: v.optional(v.string()),
+      suggestion3: v.optional(v.string()),
+    }),
+    selectedChatbotId: v.optional(v.id("chatbots")),
+    vapiSettings: v.object({
+      assistantId: v.optional(v.string()),
+      phoneNumber: v.optional(v.string()),
+    }),
+    chatbotName: v.optional(v.string()),
+    customSystemPrompt: v.optional(v.string()),
+    appearance: v.optional(appearanceSchema),
+  }).index("by_entity_id", ["entityId"]),
+
+  /* ───────── PLUGINS ───────── */
+  plugins: defineTable({
+    entityId: v.string(),
+    service: v.union(
+      v.literal("vapi"),
+      v.literal("beyond_presence"),
+      v.literal("salesforce"),
+      v.literal("zoho_desk"),
+      v.literal("slack"),
+      v.literal("clover"),
+      v.literal("hubspot"),
+    ),
+    secretName: v.string(),
+  })
+    .index("by_entity_id", ["entityId"])
+    .index("by_entity_id_and_service", ["entityId", "service"]),
+
+  /* ───────── CONVERSATIONS ───────── */
+  conversations: defineTable({
+    threadId: v.string(),
+    entityId: v.string(),
+    contactSessionId: v.id("contactSessions"),
+    chatbotId: v.optional(v.id("chatbots")),
+    caseId: v.optional(v.string()),
+    zohoDeskTicketId: v.optional(v.string()),
+    hubspotTicketId: v.optional(v.string()),
+    status: v.union(
+      v.literal("unresolved"),
+      v.literal("escalated"),
+      v.literal("resolved")
+    ),
+    kind: v.optional(
+      v.union(v.literal("chat"), v.literal("voice"), v.literal("video")),
+    ),
+    isTranscriptPending: v.optional(v.boolean()),
+    json: v.optional(v.string()),
+  })
+    .index("by_entity_id", ["entityId"])
+    .index("by_contact_session_id", ["contactSessionId"])
+    .index("by_thread_id", ["threadId"])
+    .index("by_status_and_entity_id", ["status", "entityId"])
+    .index("by_case_id", ["caseId"])
+    .index("by_zoho_desk_ticket_id", ["zohoDeskTicketId"])
+    .index("by_hubspot_ticket_id", ["hubspotTicketId"])
+    .index("by_chatbot_id", ["chatbotId"]),
+
+  /* ───────── CONTACT SESSIONS ───────── */
+  contactSessions: defineTable({
+    name: v.string(),
+    email: v.string(),
+    entityId: v.string(),
+    expiresAt: v.number(),
+    metadata: v.optional(
+      v.object({
+        userAgent: v.optional(v.string()),
+        language: v.optional(v.string()),
+        languages: v.optional(v.string()),
+        platform: v.optional(v.string()),
+        vendor: v.optional(v.string()),
+        screenResolution: v.optional(v.string()),
+        viewportSize: v.optional(v.string()),
+        timezone: v.optional(v.string()),
+        timezoneOffset: v.optional(v.number()),
+        cookieEnabled: v.optional(v.boolean()),
+        referrer: v.optional(v.string()),
+        currentUrl: v.optional(v.string()),
+      })
+    ),
+  })
+    .index("by_entity_id", ["entityId"])
+    .index("by_expires_at", ["expiresAt"]),
+
+  /* ───────── NOTIFICATIONS ───────── */
+  notifications: defineTable({
+    entityId: v.string(),
+    type: v.union(
+      v.literal("file_ready"),
+      v.literal("file_failed"),
+      v.literal("file_processing")
+    ),
+    title: v.string(),
+    message: v.string(),
+    fileId: v.optional(v.string()),
+    fileName: v.optional(v.string()),
+    read: v.boolean(),
+    createdAt: v.number(),
+  })
+    .index("by_entity_id", ["entityId"])
+    .index("by_entity_id_and_read", ["entityId", "read"])
+    .index("by_created_at", ["createdAt"]),
+
+  /* ───────── FILE CHANGE TRACKER ───────── */
+  fileChangeTracker: defineTable({
+    entityId: v.string(),
+    knowledgeBaseId: v.optional(v.string()),
+    lastChange: v.number(),
+    changeType: v.string(),
+  })
+    .index("by_entity_id", ["entityId"])
+    .index("by_entity_and_kb", ["entityId", "knowledgeBaseId"]),
+
+  /* ───────── DELETED FILES (TOMBSTONES) ───────── */
+  deletedFiles: defineTable({
+    entityId: v.string(),
+    knowledgeBaseId: v.optional(v.string()),
+    storageId: v.id("_storage"),
+    deletedAt: v.number(),
+  })
+    .index("by_entity_id", ["entityId"])
+    .index("by_entity_and_kb", ["entityId", "knowledgeBaseId"])
+    .index("by_entity_and_storage", ["entityId", "storageId"]),
+
+  /* ───────── VOICE TRANSCRIPTS ───────── */
+  voiceTranscripts: defineTable({
+    entityId: v.string(),
+    conversationId: v.optional(v.id("conversations")),
+    contactSessionId: v.id("contactSessions"),
+    chatbotId: v.optional(v.id("chatbots")),
+    callId: v.optional(v.string()),
+    transcript: v.array(
+      v.object({
+        role: v.union(v.literal("user"), v.literal("assistant")),
+        text: v.string(),
+        timestamp: v.optional(v.number()),
+      })
+    ),
+    duration: v.optional(v.number()),
+    startedAt: v.number(),
+    endedAt: v.optional(v.number()),
+  })
+    .index("by_entity_id", ["entityId"])
+    .index("by_conversation_id", ["conversationId"])
+    .index("by_contact_session_id", ["contactSessionId"])
+    .index("by_chatbot_id", ["chatbotId"]),
+
+  beyondPresenceCallLinks: defineTable({
+    callId: v.string(),
+    conversationId: v.id("conversations"),
+    threadId: v.string(),
+    lastProcessedSentAt: v.optional(v.number()),
+    endedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_call_id", ["callId"])
+    .index("by_conversation_id", ["conversationId"]),
+
+  beyondPresenceLanguageAgents: defineTable({
+    entityId: v.optional(v.string()),
+    
+    baseAgentId: v.string(),
+    language: v.string(),
+    agentId: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_entity_base_language", ["entityId", "baseAgentId", "language"])
+    .index("by_agent_id", ["agentId"]),
+
+  tokenUsageEvents: defineTable({
+    entityId: v.string(),
+    provider: v.string(),
+    model: v.optional(v.string()),
+    kind: v.optional(v.string()),
+    promptTokens: v.optional(v.number()),
+    completionTokens: v.optional(v.number()),
+    totalTokens: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_entity_id", ["entityId"])
+    .index("by_entity_and_created_at", ["entityId", "createdAt"]),
+
+  tokenUsageDaily: defineTable({
+    entityId: v.string(),
+    dayStart: v.number(),
+    provider: v.string(),
+    totalTokens: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_entity_id", ["entityId"])
+    .index("by_entity_and_day", ["entityId", "dayStart"])
+    .index("by_entity_day_provider", ["entityId", "dayStart", "provider"]),
+
+  convexUsageEstimatedDaily: defineTable({
+    entityId: v.string(),
+    dayStart: v.number(),
+    databaseBytes: v.number(),
+    vectorBytes: v.number(),
+    fileBytes: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_entity_id", ["entityId"])
+    .index("by_entity_and_day", ["entityId", "dayStart"]),
+});

@@ -1,0 +1,19 @@
+{
+    "name": "spinabot-cursor-extension",
+    "version": "1.0.0",
+    "description": "Spinabot Cursor AI Chrome Extension",
+    "type": "module",
+    "scripts": {
+        "dev": "node build.mjs",
+        "build": "node build.mjs",
+        "preview": "vite preview"
+    },
+    "devDependencies": {
+        "@types/chrome": "^0.0.268",
+        "@types/node": "^20.14.0",
+        "esbuild": "^0.27.3",
+        "typescript": "^5.4.5",
+        "vite": "^5.2.11",
+        "vite-plugin-static-copy": "^1.0.5"
+    }
+}

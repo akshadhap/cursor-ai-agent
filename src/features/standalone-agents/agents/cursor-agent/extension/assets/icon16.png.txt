@@ -1,0 +1,3 @@
+# Placeholder for icon16.png
+# Replace this with actual 16x16 icon image
+# You can generate icons at: https://www.favicon-generator.org/

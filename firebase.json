@@ -1,0 +1,13 @@
+{
+  "hosting": {
+    "source": ".",
+    "site": "project-k-e61e3",
+    "webFrameworks": {
+      "region": "us-central1",
+      "run": {
+        "memory": "512Mi",
+        "cpu": 2
+      }
+    }
+  }
+}

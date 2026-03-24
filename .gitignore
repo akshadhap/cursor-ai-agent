@@ -1,0 +1,68 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+/src/generated/prisma
+
+# Sentry Config File
+.env.sentry-build-plugin
+
+# Markdown files (except README)
+*.md
+!README.md
+
+# Swap files
+*.swc
+*.vscode
+
+# Log and output files
+mprocs.log
+lint_output.txt
+action_executor_lint.txt
+
+# Test/debug scripts at root
+debug-slack.js
+test-upload.js
+sampleData.jsonl
+
+# Local HTML artefacts
+index.html
+Beyond\ Presence_files/

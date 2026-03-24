@@ -1,0 +1,86 @@
+import { v } from "convex/values";
+import { internal } from "../_generated/api";
+import { action } from "../_generated/server";
+import { getSecretValue, parseSecretString } from "../lib/secrets";
+
+export const getVapiSecrets = action({
+  args: {
+    entityId: v.string()
+  },
+  handler: async (ctx, args) => {
+    const plugin = await ctx.runQuery(
+      internal.system.plugin.getByEntityIdAndService,
+      {
+        entityId: args.entityId,
+        service: "vapi",
+      },
+    );
+    if(!plugin){
+        return null;
+    }
+
+    const secretName = plugin.secretName;
+
+    const secret = await getSecretValue(secretName);
+
+    const secretData = parseSecretString<{
+    privateApiKey: string;
+    publicApiKey: string;
+    }>(secret);
+
+    if (!secretData) {
+    return null;
+    };
+
+    if (!secretData.publicApiKey) {
+    return null;
+    };
+
+    if (!secretData.privateApiKey) {
+    return null;
+    };
+
+    return{
+        publicApiKey: secretData.publicApiKey,
+    };
+
+
+
+
+  },
+});
+
+export const getBeyondPresenceConfig = action({
+  args: {
+    entityId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const plugin = await ctx.runQuery(
+      internal.system.plugin.getByEntityIdAndService,
+      {
+        entityId: args.entityId,
+        service: "beyond_presence",
+      },
+    );
+
+    if (!plugin) {
+      return null;
+    }
+
+    const secret = await getSecretValue(plugin.secretName);
+    const secretData = parseSecretString<{
+      apiKey: string;
+      baseUrl?: string;
+      avatarId?: string;
+    }>(secret);
+
+    if (!secretData?.apiKey) {
+      return null;
+    }
+
+    return {
+      avatarId: secretData.avatarId ?? "",
+      baseUrl: secretData.baseUrl ?? "https://api.bey.dev",
+    };
+  },
+});
