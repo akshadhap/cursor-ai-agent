@@ -1,0 +1,23 @@
+# Dependencies
+node_modules
+
+# Next.js
+.next
+out
+
+# Env files
+.env*
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+
+# Logs
+*.log
+
+# Config that triggers Prisma 7
+prisma.config.ts

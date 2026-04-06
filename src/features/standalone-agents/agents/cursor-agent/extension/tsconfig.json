@@ -1,0 +1,36 @@
+{
+    "compilerOptions": {
+        "target": "ES2020",
+        "useDefineForClassFields": true,
+        "module": "AMD",
+        "lib": [
+            "ES2020",
+            "DOM",
+            "DOM.Iterable"
+        ],
+        "skipLibCheck": true,
+        "strict": true,
+        "moduleResolution": "node",
+        "resolveJsonModule": true,
+        "isolatedModules": false,
+        "noEmit": false,
+        "outFile": "./dist/bundled.js",
+        "noUnusedLocals": false,
+        "noUnusedParameters": false,
+        "noFallthroughCasesInSwitch": true,
+        "types": [
+            "chrome",
+            "node"
+        ]
+    },
+    "include": [
+        "src/**/*",
+        "background/**/*",
+        "content/**/*",
+        "popup/**/*"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist"
+    ]
+}

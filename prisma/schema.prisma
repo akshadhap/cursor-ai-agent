@@ -1,0 +1,378 @@
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../src/generated/prisma"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+  engineType    = "binary"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String             @id
+  name             String
+  email            String             @unique
+  emailVerified    Boolean            @default(false)
+  image            String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @default(now()) @updatedAt
+  credentials      Credential[]
+  workflows        Workflow[]
+  executions       Execution[]
+  accounts         Account[]
+  sessions         Session[]
+  community        WorkflowTemplate[] @relation("community")
+  standaloneAgents StandaloneAgent[]  @relation("standaloneAgents")
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  @@map("verification")
+}
+
+model Credential {
+  id        String         @id @default(cuid())
+  name      String
+  value     String
+  type      CredentialType
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  userId    String
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Node      Node[]
+}
+
+model Workflow {
+  id                   String                  @id @default(cuid())
+  name                 String
+  createdAt            DateTime                @default(now())
+  updatedAt            DateTime                @updatedAt
+  userId               String
+  isDeveloper          Boolean                 @default(true)
+  stickyNotes          Json?
+  conversationMetadata Json? // Store language, conversation summary, etc.
+  connections          Connection[]
+  executions           Execution[]
+  leads                Lead[]
+  nodes                Node[]
+  user                 User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aiMessages           AIConversationMessage[] @relation("aiMessages")
+}
+
+model Node {
+  id                String       @id @default(cuid())
+  workflowId        String
+  name              String
+  type              NodeType
+  position          Json
+  data              Json         @default("{}")
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  credentialId      String?
+  agentType         AgentType?
+  outputConnections Connection[] @relation("FromNode")
+  inputConnections  Connection[] @relation("ToNode")
+  credential        Credential?  @relation(fields: [credentialId], references: [id])
+  workflow          Workflow     @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+}
+
+model Connection {
+  id         String   @id @default(cuid())
+  workflowId String
+  fromNodeId String
+  toNodeId   String
+  fromOutput String   @default("main")
+  toInput    String   @default("main")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  fromNode   Node     @relation("FromNode", fields: [fromNodeId], references: [id], onDelete: Cascade)
+  toNode     Node     @relation("ToNode", fields: [toNodeId], references: [id], onDelete: Cascade)
+  workflow   Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@unique([fromNodeId, toNodeId, fromOutput, toInput])
+}
+
+model Execution {
+  id             String          @id @default(cuid())
+  workflowId     String?
+  workflowName   String?
+  userId         String?
+  status         ExecutionStatus @default(RUNNING)
+  error          String?
+  errorStack     String?
+  startedAt      DateTime        @default(now())
+  completedAt    DateTime?
+  inngestEventId String          @unique
+  output         Json?
+  executedNodes  Json? // Array of {nodeId, nodeName, nodeType, executedAt, tokens}
+  plannedNodes   Json? // Array of {nodeId, nodeName, nodeType} - nodes that will be executed
+  user           User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workflow       Workflow?       @relation(fields: [workflowId], references: [id], onDelete: SetNull)
+}
+
+model Lead {
+  id             String      @id @default(cuid())
+  workflowId     String
+  name           String
+  email          String
+  company        String?
+  score          Int         @default(0)
+  status         LeadStatus  @default(IN_REVIEW)
+  emailStatus    EmailStatus @default(NOT_SENT)
+  followupsSent  Int         @default(0)
+  lastActivityAt DateTime?
+  source         LeadSource
+  raw            Json?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  priority       Int?        @default(9999)
+  workflow       Workflow    @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@index([workflowId])
+}
+
+model SmtpSender {
+  id         String           @id @default(cuid())
+  email      String           @unique
+  status     SmtpSenderStatus @default(PENDING)
+  token      String           @unique
+  createdAt  DateTime         @default(now())
+  verifiedAt DateTime?
+}
+
+enum CredentialType {
+  OPENAI
+  ANTHROPIC
+  GEMINI
+  NOTION
+  HUBSPOT
+  MCP_CLIENT
+  SALESFORCE
+  FIRECRAWL
+  QUICKBOOKS
+  SHOPIFY
+  MS_TEAMS
+  GOOGLE_DRIVE
+  CALENDLY
+  ZENDESK
+  ZOOM
+  ZOHO_CRM
+  AIRTABLE
+  INTERCOM
+  GOOGLE_SHEETS
+  GOOGLE_CALENDAR
+  JIRA
+  TELEGRAM
+  PINECONE
+  AIRBNB
+  EXPEDIA
+  RAZORPAY
+}
+
+enum NodeType {
+  INITIAL
+  MANUAL_TRIGGER
+  HTTP_REQUEST
+  GOOGLE_FORM_TRIGGER
+  STRIPE_TRIGGER
+  ANTHROPIC
+  GEMINI
+  OPENAI
+  DISCORD
+  SLACK
+  SENDGRID
+  SMTP2GO
+  WEBHOOK_TRIGGER
+  WAIT
+  AGENT
+  MCP_CLIENT
+  NOTION
+  HUBSPOT
+  MCP_CLIENT_TOOL
+  SALESFORCE
+  FIRECRAWL
+  QUICKBOOKS
+  SHOPIFY
+  MS_TEAMS
+  GOOGLE_DRIVE
+  CALENDLY
+  ZENDESK
+  ZOOM
+  ZOHO_CRM
+  AIRTABLE
+  INTERCOM
+  GOOGLE_SHEETS
+  GOOGLE_CALENDAR
+  CRON_TRIGGER
+  HUBSPOT_TRIGGER
+  JIRA
+  TELEGRAM
+  PINECONE
+  MCP_TRIGGER
+  TELEGRAM_TRIGGER
+  AIRBNB
+  EXPEDIA
+  RAZORPAY
+}
+
+enum AgentType {
+  LEAD_INGESTION
+  LEAD_QUALIFIER
+  LEAD_PRIORITIZER
+  LEAD_COLD_OUTREACH
+  LEAD_FOLLOWUP
+}
+
+enum ExecutionStatus {
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
+enum LeadStatus {
+  QUALIFIED
+  NOT_QUALIFIED
+  IN_REVIEW
+}
+
+enum EmailStatus {
+  NOT_SENT
+  SENT
+  DELIVERED
+  OPENED
+  BOUNCED
+}
+
+enum LeadSource {
+  WEBFORM
+  EXCEL
+  CRM
+}
+
+enum SmtpSenderStatus {
+  PENDING
+  VERIFIED
+}
+
+model WorkflowTemplate {
+  id          String   @id @default(cuid())
+  name        String
+  description String?  @db.Text
+  tags        String[] @default([])
+
+  // Original workflow structure (without credentials)
+  nodes       Json
+  connections Json
+  stickyNotes Json?
+
+  // Metadata
+  createdById String
+  createdBy   User   @relation("community", fields: [createdById], references: [id], onDelete: Cascade)
+
+  usageCount Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdById])
+}
+
+// AI Workflow Generator - Scalable conversation system (one per workflow)
+model AIConversationMessage {
+  id         String      @id @default(cuid())
+  workflowId String
+  workflow   Workflow    @relation("aiMessages", fields: [workflowId], references: [id], onDelete: Cascade)
+  role       MessageRole
+  content    String      @db.Text
+  metadata   Json? // Store suggestions, language, etc.
+  sequence   Int         @default(autoincrement()) // Guaranteed ordering
+  createdAt  DateTime    @default(now())
+
+  @@index([workflowId, sequence])
+  @@index([workflowId, createdAt])
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+}
+
+// Standalone Agents - Independent AI agents for specialized tasks
+// Each user can have only one agent of each type
+model StandaloneAgent {
+  id     String @id @default(cuid())
+  name   String
+  type   String // e.g., "AI_LEAD_GENERATOR", "COLD_WRITER", "FOLLOWUP_PRO"
+  status String @default("DRAFT") // DRAFT, CONFIGURED, ACTIVE, PAUSED
+  config Json   @default("{}") // Agent-specific configuration
+  data   Json? // Agent data (leads, analytics, etc.)
+
+  userId String
+  user   User   @relation("standaloneAgents", fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  activatedAt DateTime?
+
+  @@unique([userId, type])
+  @@index([userId])
+  @@index([type])
+}
+
+// Daily Lead Generation Tracking - Track per user daily limits
+model DailyLeadQuota {
+  id             String   @id @default(cuid())
+  userId         String
+  date           DateTime @default(now()) @db.Date // Date only, no time
+  leadsGenerated Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([userId, date])
+  @@index([userId])
+  @@index([date])
+}
